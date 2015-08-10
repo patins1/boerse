@@ -16,6 +16,9 @@ import com.kiegeland.boerse.Manager;
 import com.kiegeland.boerse.domain.Gain;
 import com.kiegeland.boerse.domain.Stocks;
 
+import de.kupzog.ktable.KTable;
+import de.kupzog.ktable.SWTX;
+
 public class StockTableDialog extends Dialog {
 
 	private final Stocks aStocks;

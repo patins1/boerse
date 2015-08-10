@@ -23,6 +23,9 @@ import com.kiegeland.boerse.table.ITaggedValues;
 import com.kiegeland.boerse.table.KBoersenModel;
 import com.kiegeland.boerse.util.Utilities;
 
+import de.kupzog.ktable.KTable;
+import de.kupzog.ktable.SWTX;
+
 public class AllStockGainsView extends ViewPart {
 
 	private KTable gainsTable;

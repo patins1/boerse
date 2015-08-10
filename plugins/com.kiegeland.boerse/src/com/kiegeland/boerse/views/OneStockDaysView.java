@@ -15,6 +15,9 @@ import com.kiegeland.boerse.domain.Stocks;
 import com.kiegeland.boerse.table.ITaggedValues;
 import com.kiegeland.boerse.table.KBoersenModel;
 
+import de.kupzog.ktable.KTable;
+import de.kupzog.ktable.SWTX;
+
 public class OneStockDaysView extends ViewPart {
 
 	private Stocks aStocks;

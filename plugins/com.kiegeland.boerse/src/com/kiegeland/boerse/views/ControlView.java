@@ -32,6 +32,8 @@ import com.kiegeland.boerse.conditions.MinimizeAscendCondition;
 import com.kiegeland.boerse.domain.Markt;
 import com.kiegeland.boerse.domain.Stocks;
 
+import de.kupzog.ktable.KTable;
+
 public class ControlView extends ViewPart {
 
 	public static String knr = "x"; // SBroker knr
