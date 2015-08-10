@@ -1,9 +1,11 @@
+/**
+ * Copyright (C) 2015 by Joerg Kiegeland
+ */
 package com.kiegeland.boerse.domain;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 

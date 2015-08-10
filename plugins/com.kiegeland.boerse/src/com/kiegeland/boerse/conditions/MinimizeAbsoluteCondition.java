@@ -1,7 +1,9 @@
+/**
+ * Copyright (C) 2015 by Joerg Kiegeland
+ */
 package com.kiegeland.boerse.conditions;
 
 import com.kiegeland.boerse.domain.Stock;
-import com.kiegeland.boerse.views.AllStockGainsView;
 
 public class MinimizeAbsoluteCondition extends Condition {
 

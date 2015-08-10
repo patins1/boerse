@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2015 by Joerg Kiegeland
+ */
 package com.kiegeland.boerse.util;
 
 import java.io.BufferedReader;

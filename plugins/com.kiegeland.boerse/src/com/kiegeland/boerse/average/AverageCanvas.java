@@ -1,15 +1,5 @@
-/****************************************************************
- * Licensed Material - Property of IBM
- *
- * ****-*** 
- *
- * (c) Copyright IBM Corp. 2006.  All rights reserved.
- *
- * US Government Users Restricted Rights - Use, duplication or
- * disclosure restricted by GSA ADP Schedule Contract with
- * IBM Corp.
- *
- ****************************************************************
+/**
+ * Copyright (C) 2015 by Joerg Kiegeland
  */
 package com.kiegeland.boerse.average;
 
@@ -32,11 +22,6 @@ import com.kiegeland.boerse.domain.Markt;
 import com.kiegeland.boerse.domain.Stock;
 import com.kiegeland.boerse.domain.Stocks;
 
-/**
- * The canvas to show chart.
- * 
- * @author Qi Liang
- */
 public class AverageCanvas extends Canvas {
 
 	/**

@@ -1,15 +1,5 @@
-/****************************************************************
- * Licensed Material - Property of IBM
- *
- * ****-*** 
- *
- * (c) Copyright IBM Corp. 2006.  All rights reserved.
- *
- * US Government Users Restricted Rights - Use, duplication or
- * disclosure restricted by GSA ADP Schedule Contract with
- * IBM Corp.
- *
- ****************************************************************
+/**
+ * Copyright (C) 2015 by Joerg Kiegeland
  */
 package com.kiegeland.boerse.chart;
 
@@ -33,11 +23,8 @@ import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 
-/**
- * The canvas to show chart.
- * 
- * @author Qi Liang
- */
+
+
 public class ChartCanvas extends Canvas {
 
 	/**

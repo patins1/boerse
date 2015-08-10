@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2015 by Joerg Kiegeland
+ */
 package com.kiegeland.boerse.average;
 
 import org.eclipse.jface.dialogs.Dialog;
@@ -7,8 +10,6 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
-
-import com.kiegeland.boerse.chart.ChartDialog;
 
 public class AverageDialog extends Dialog {
 

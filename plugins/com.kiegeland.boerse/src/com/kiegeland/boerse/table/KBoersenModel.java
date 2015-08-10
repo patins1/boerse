@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2015 by Joerg Kiegeland
+ */
 package com.kiegeland.boerse.table;
 
 import java.util.ArrayList;
@@ -9,12 +12,6 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.RGB;
 
 import com.kiegeland.boerse.domain.Stock;
-
-import de.kupzog.ktable.KTableCellEditor;
-import de.kupzog.ktable.KTableCellRenderer;
-import de.kupzog.ktable.KTableDefaultModel;
-import de.kupzog.ktable.renderers.DefaultCellRenderer;
-import de.kupzog.ktable.renderers.TextCellRenderer;
 
 public class KBoersenModel extends KTableDefaultModel {
 

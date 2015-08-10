@@ -1,16 +1,11 @@
-/*
- * Created on Sep 7, 2003
- *
- * To change the template for this generated file go to
- * Window>Preferences>Java>Code Generation>Code and Comments
+/**
+ * Copyright (C) 2015 by Joerg Kiegeland
  */
 package com.kiegeland.boerse.domain;
 
 import java.text.DateFormat;
-import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 
 import org.eclipse.swt.graphics.RGB;
 

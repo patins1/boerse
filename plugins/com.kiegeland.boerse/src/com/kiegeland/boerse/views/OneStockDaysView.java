@@ -1,22 +1,19 @@
+/**
+ * Copyright (C) 2015 by Joerg Kiegeland
+ */
 package com.kiegeland.boerse.views;
 
 import java.util.Arrays;
 
-import org.eclipse.birt.chart.model.Chart;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.part.ViewPart;
 
 import com.kiegeland.boerse.chart.ChartDialog;
-import com.kiegeland.boerse.chart.BoersenChart;
 import com.kiegeland.boerse.domain.Stock;
 import com.kiegeland.boerse.domain.Stocks;
 import com.kiegeland.boerse.table.ITaggedValues;
 import com.kiegeland.boerse.table.KBoersenModel;
-
-import de.kupzog.ktable.KTable;
-import de.kupzog.ktable.SWTX;
 
 public class OneStockDaysView extends ViewPart {
 

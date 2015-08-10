@@ -1,8 +1,10 @@
+/**
+ * Copyright (C) 2015 by Joerg Kiegeland
+ */
 package com.kiegeland.boerse.chart;
 
 import java.awt.Desktop;
 import java.net.URI;
-import java.net.URISyntaxException;
 
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.swt.SWT;

@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2015 by Joerg Kiegeland
+ */
 package com.kiegeland.boerse.views;
 
 import java.util.ArrayList;
@@ -28,8 +31,6 @@ import com.kiegeland.boerse.conditions.DetermineBaseCondition;
 import com.kiegeland.boerse.conditions.MinimizeAscendCondition;
 import com.kiegeland.boerse.domain.Markt;
 import com.kiegeland.boerse.domain.Stocks;
-
-import de.kupzog.ktable.KTable;
 
 public class ControlView extends ViewPart {
 

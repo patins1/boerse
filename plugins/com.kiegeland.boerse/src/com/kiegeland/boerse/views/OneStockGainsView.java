@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2015 by Joerg Kiegeland
+ */
 package com.kiegeland.boerse.views;
 
 import java.util.List;
@@ -15,9 +18,6 @@ import com.kiegeland.boerse.domain.Stock;
 import com.kiegeland.boerse.domain.Stocks;
 import com.kiegeland.boerse.table.ITaggedValues;
 import com.kiegeland.boerse.table.KBoersenModel;
-
-import de.kupzog.ktable.KTable;
-import de.kupzog.ktable.SWTX;
 
 public class OneStockGainsView extends ViewPart {
 

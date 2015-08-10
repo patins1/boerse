@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2015 by Joerg Kiegeland
+ */
 package com.kiegeland.boerse.table;
 
 import java.util.List;
@@ -12,9 +15,6 @@ import org.eclipse.swt.widgets.Shell;
 import com.kiegeland.boerse.Manager;
 import com.kiegeland.boerse.domain.Gain;
 import com.kiegeland.boerse.domain.Stocks;
-
-import de.kupzog.ktable.KTable;
-import de.kupzog.ktable.SWTX;
 
 public class StockTableDialog extends Dialog {
 
