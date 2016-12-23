@@ -127,7 +127,6 @@ public class ChartCanvas extends Canvas {
 			gc = new GC(cachedImage);
 			render.setProperty(IDeviceRenderer.GRAPHICS_CONTEXT, gc);
 
-			System.out.println("Calc chart..");
 			Bounds bo = BoundsImpl.create(0, 0, size.width, size.height);
 			bo.scale(72d / render.getDisplayServer().getDpiResolution());
 			Generator gr = Generator.instance();
@@ -136,11 +135,7 @@ public class ChartCanvas extends Canvas {
 			} catch (ChartException ex) {
 				ex.printStackTrace();
 			}
-			System.out.println("Calc chart finished");
-
-			System.out.println("Paint chart..");
 			gr.render(render, state);
-			System.out.println("Paint chart finished");
 		} catch (ChartException ex) {
 			ex.printStackTrace();
 		} finally {

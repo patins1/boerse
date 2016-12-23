@@ -33,7 +33,7 @@ public class SBrokerView extends ViewPart {
 
 				@Override
 				public void changed(ProgressEvent event) {
-					System.out.println("changed: " + browser.getUrl());
+					// System.out.println("changed: " + browser.getUrl());
 				}
 
 				@Override

@@ -84,7 +84,6 @@ public class AverageCanvas extends Canvas {
 			return;
 		}
 
-		System.out.println("Calc chart..");
 
 		Point size = new Point(averageConfig.getLookRange(), getSize().y);
 		chart = new float[size.x][size.y];
@@ -118,6 +117,7 @@ public class AverageCanvas extends Canvas {
 					// continue;
 
 					float weight = (float) (Math.pow(zinsen, this.averageConfig.macht) - 1);
+					weight=1;
 					totalGraphis++;
 					int stockX = 0;
 					if (stopAt != null)
@@ -139,10 +139,9 @@ public class AverageCanvas extends Canvas {
 			for (int x = 0; x < size.x; x++) {
 				float[] chartx = chart[x];
 				int[] chartxCount = chartCount[x];
-				float z = 0;
 				for (int y = 0; y < size.y; y++) {
+					float z = chartx[y];
 					if (chartxCount[y] != 0) {
-						z = chartx[y];
 						if (average)
 							z /= chartxCount[y];
 					}
@@ -236,8 +235,8 @@ public class AverageCanvas extends Canvas {
 				}
 			}
 		}
-
-		System.out.println("Calc chart finished (total graphs=" + totalGraphis + ")");
+	
+			System.out.println("Calc chart finished (total graphs=" + totalGraphis + ")");
 
 		// float max = Float.MIN_VALUE;
 		// float min = Float.MAX_VALUE;
@@ -279,7 +278,6 @@ public class AverageCanvas extends Canvas {
 			gc.setForeground(new Color(null, 255, 255, 255));
 			gc.fillRectangle(size);
 
-			System.out.println("Paint chart..");
 
 			float factorX = averageConfig.getLookRange() / (float) size.width;
 			for (int x = 0; x < size.width; x++) {
@@ -295,8 +293,6 @@ public class AverageCanvas extends Canvas {
 					gc.drawPoint(x, size.height - 1 - y);
 				}
 			}
-			System.out.println("Paint chart finished");
-
 		} finally {
 			if (gc != null)
 				gc.dispose();

@@ -108,8 +108,8 @@ public class Utilities {
 		return asString;
 	}
 
-	static public String printPercentage(float success2) {
-		return "" + Math.round(success2 * 100) + "%";
+	static public String printPercentage(double success2) {
+		return "" + String.format( "%+.2f", success2 * 100) + "%";
 	}
 
 	static byte[] toByteArray(String hex) {

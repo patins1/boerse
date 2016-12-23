@@ -6,6 +6,7 @@ package com.kiegeland.boerse.domain;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -20,6 +21,7 @@ public class Stocks {
 	public long volume;
 
 	private Stock[] stocks = new Stock[] {};
+	private String group;
 
 	public Stocks(String symbol) {
 		this.symbol = symbol;
@@ -43,8 +45,14 @@ public class Stocks {
 
 	public void setStocks(List<Stock> stocks) {
 		this.stocks = stocks.toArray(new Stock[] {});
-		if (size() == 0)
-			throw new RuntimeException("No stocks found!");
+		int index = 0;
+		for (Stock stock : getStocks()) {
+			stock.aStocks = this;
+			stock.setIndex(index);
+			index++;
+		}
+		// if (size() == 0)
+		// throw new RuntimeException("No stocks found!");
 	}
 
 	public Stock getLatestStock() {
@@ -90,7 +98,7 @@ public class Stocks {
 			name = Utilities.fromFile(getNameMappingFile());
 		} catch (IOException e) {
 			try {
-				String content = Utilities.downloadURL("http://de.finance.yahoo.com/q?s=" + getSymbol());
+				String content = Utilities.downloadURL("http://au.finance.yahoo.com/q?s=" + getSymbol() + ".AX");
 				SearchStructure sea = new SearchStructure(content);
 				name = sea.findNext("r ", "- Yahoo! Finanzen").trim();
 				if (name.endsWith(" N"))
@@ -113,5 +121,27 @@ public class Stocks {
 
 	public void setVolume(Long long1) {
 		volume = long1;
+	}
+
+	public void setGroup(String group) {
+		this.group = group;
+	}
+
+	public String getGroup() {
+		return group;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getName() {
+		return this.name;
+	}
+
+	public void add(Stock stock) {
+		List<Stock> stockss = new ArrayList<Stock>(Arrays.asList(stocks));
+		stockss.add(stock);
+		setStocks(stockss);
 	}
 }

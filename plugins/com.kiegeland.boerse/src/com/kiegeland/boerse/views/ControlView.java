@@ -3,6 +3,8 @@
  */
 package com.kiegeland.boerse.views;
 
+import java.awt.Toolkit;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -18,6 +20,7 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.DateTime;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Slider;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
@@ -26,17 +29,19 @@ import org.eclipse.ui.part.ViewPart;
 import com.kiegeland.boerse.Manager;
 import com.kiegeland.boerse.average.AverageConfig;
 import com.kiegeland.boerse.average.AverageDialog;
+import com.kiegeland.boerse.chart.ChartDialog;
 import com.kiegeland.boerse.conditions.Condition;
 import com.kiegeland.boerse.conditions.DetermineBaseCondition;
 import com.kiegeland.boerse.conditions.MinimizeAscendCondition;
 import com.kiegeland.boerse.domain.Markt;
+import com.kiegeland.boerse.domain.Stock;
 import com.kiegeland.boerse.domain.Stocks;
+import com.kiegeland.boerse.util.Utilities;
 
 import de.kupzog.ktable.KTable;
 
 public class ControlView extends ViewPart {
 
-	public static String knr = "x"; // SBroker knr
 	public static String onvistaUser = "x";// onvista user name
 	public static String onvistaPsw = "x";// onvista password
 
@@ -55,6 +60,12 @@ public class ControlView extends ViewPart {
 	private Label baseLabel;
 
 	private Slider ascSlider;
+
+	private int counter = 0;
+
+	private String lastStock = null;
+
+	Runnable onC;
 
 	public ControlView() {
 	}
@@ -242,6 +253,7 @@ public class ControlView extends ViewPart {
 
 		{
 			Button b = new Button(parent, 0);
+			final Shell shell = this.getSite().getShell();
 			b.setText("SBROKER");
 			b.addSelectionListener(new SelectionListener() {
 
@@ -258,20 +270,69 @@ public class ControlView extends ViewPart {
 
 							@Override
 							public void run() {
-								System.out.println("" + web.execute("document.getElementById('knr').value='" + knr + "'"));
-								System.out.println("" + web.execute("for(var i=0; i<document.all.length; i++) if (document.all[i].getAttribute(\"type\")==\"password\") document.all[i].value='8253453';"));
-								System.out.println("" + web.execute("document.getElementById('legitimation').submit()"));
-								sBrokerView.onComplete = new Runnable() {
+								sBrokerView.onComplete = onC = new Runnable() {
 									@Override
 									public void run() {
-										// web.setUrl("http://www.onvista.de/realpushliste.html?ID_SHORT=DAX");
+										System.out.println("Stock loaded " + lastStock);
+										try {
+											if (lastStock != null) {
+												String text = web.getText();
+												text = text.replace("<title>", "<base href=\"https://www2.commsec.com.au/Private/MarketPrices/QuoteSearch/QuoteSearch.aspx\"><title>");
+												File file = new File("C:\\kurse\\snapshots\\" + lastStock + " " + Stock.dateFormat3.format(new Date()) + ".html");
+												Utilities.toFile(file, text);
+												System.out.println("Stock stored " + file.toString());
+												if (ChartDialog.current != null && ChartDialog.current.istocks != null && ChartDialog.current.istocks.getSymbol().equals(lastStock)) {
+													Stock stock = ChartDialog.parseStock(ChartDialog.current.istocks, text, new Date());
+													if (stock != null && stock.getClose() != ChartDialog.current.istocks.getLatestStock().getClose() && ChartDialog.current.notifyButton.getSelection()) {
+														Toolkit.getDefaultToolkit().beep();
+														Thread.sleep(400);
+														Toolkit.getDefaultToolkit().beep();
+														Thread.sleep(400);
+														Toolkit.getDefaultToolkit().beep();
+														Thread.sleep(400);
+														Toolkit.getDefaultToolkit().beep();
+													}
+													ChartDialog.current.istocks.add(stock);
+													ChartDialog.current.repaint();
+												}
+											}
+										} catch (Exception e) {
+											e.printStackTrace();
+										}
+										// String[] stocksToWatch = new String[] { "A2M", "BHP", "BAL", "JBH" };
+										String[] stocksToWatch = new String[] { "A2M", "BHP", "RMD", "JBH", "TWE", "BAL", "BPT", "SXY", "WOW", "TLS", "CBA", "AMP", "BKL" };
+										lastStock = stocksToWatch[counter % stocksToWatch.length];
+										counter++;
+										Runnable r = new Runnable() {
+
+											@Override
+											public void run() {
+												System.out.println("Sleep for " + lastStock);
+												try {
+													Thread.sleep(new Date().getHours() >= 8 ? 10000 : 1000 * 60 * 9);
+												} catch (InterruptedException e) {
+													e.printStackTrace();
+												}
+												System.out.println("Will set stock " + lastStock);
+												shell.getDisplay().asyncExec(new Runnable() {
+													public void run() {
+														web.setUrl("https://www2.commsec.com.au/Private/MarketPrices/QuoteSearch/QuoteSearch.aspx?stockCode=" + lastStock);
+														System.out.println("Stock URL " + lastStock + " set");
+														sBrokerView.onComplete = onC;
+													}
+												});
+
+											}
+
+										};
+										new Thread(r).start();
 									}
 								};
 							}
 						};
 
 						// if (!web.getUrl().contains("onvista")) {
-						web.setUrl("https://meindepot.sbroker.de/0_start/0_4_login.jsp");
+						web.setUrl("https://www2.commsec.com.au/Public/HomePage/Login.aspx?LoginResult=LoginRequired&r=https%3a%2f%2fwww2.commsec.com.au%2f");
 
 						// webView.webBrowser.setUrl("http://www.google.de/");
 					} catch (PartInitException e2) {

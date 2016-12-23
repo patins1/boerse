@@ -49,7 +49,7 @@ public class AverageDialog extends Dialog {
 	@Override
 	protected void constrainShellSize() {
 		super.constrainShellSize();
-		getShell().setSize(200, 200);
+		getShell().setSize(300, 200);
 	}
 
 	protected void setShellStyle(int newShellStyle) {

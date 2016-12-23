@@ -17,17 +17,30 @@ public class Stock implements ITaggedValues {
 	public float close;
 	public Stock succ;
 	public int index;
-	private Stock[] stocks;
+	public Stock[] stocks;
 	public Date date;
-	float price;
-	float open;
-	float high;
-	float low;
-	float adjClose;
+	public float open;
+	public float high;
+	public float low;
+	public float adjClose;
 	public long volume;
-	private final Stocks aStocks;
+	Stocks aStocks;
 
 	public static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+	public static DateFormat dateFormat2 = new SimpleDateFormat("dd/MM/yyyy hh:mm:ss a");
+
+	public static DateFormat dateFormat3 = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss");
+
+	public static DateFormat dateFormat4 = new SimpleDateFormat("yyyy-MM-dd hh-mm-ss a");
+	private int buyers;
+	private int sellers;
+	private int buyersPeople;
+	private int sellersPeople;
+
+	float[] depths = new float[10 * 4];
+	private int buyVolumnes;
+	private int selVolumnes;
 
 	/**
 	 * @param symbol2
@@ -100,6 +113,10 @@ public class Stock implements ITaggedValues {
 		this.date = date;
 	}
 
+	public float getClose() {
+		return close;
+	}
+
 	public void setClose(float close) {
 		this.close = close;
 		if (this.high < close) {
@@ -122,7 +139,7 @@ public class Stock implements ITaggedValues {
 		if (name.equals("Date"))
 			return Stock.dateFormat.format(date);
 		if (name.equals("Asc") && pred() != null)
-			return Utilities.printPercentage(close / pred().close);
+			return Utilities.printPercentage(getDelta());
 		if (name.equals("Open"))
 			return open;
 		if (name.equals("High"))
@@ -140,12 +157,54 @@ public class Stock implements ITaggedValues {
 
 	@Override
 	public RGB getBackgoundColor(int row) {
+		this.succ = getStock(1);
+		if (pred() != null && pred().pred() != null && pred().pred().pred() != null && pred().pred().pred().pred() != null && pred().pred().pred().pred().pred() != null && succ != null && succ.succ != null && succ.succ.succ != null) {
+			float delta = getDelta();
+			float deltaPred = pred().getDelta();
+			float deltaPredPred = pred().pred().getDelta();
+			float deltaPredPredPred = pred().pred().pred().getDelta();
+			float deltaPredPredPredPred = pred().pred().pred().pred().getDelta();
+			float deltaNext = succ.getDelta();
+			if (!true) {
+				delta = getDeltaReverse();
+				deltaPred = succ.getDeltaReverse();
+				deltaPredPred = succ.succ.getDeltaReverse();
+				deltaNext = pred().getDeltaReverse();
+			}
+			if (!true) {
+				delta = getDeltaNegated();
+				deltaPred = pred().getDeltaNegated();
+				deltaPredPred = pred().pred().getDeltaNegated();
+				deltaNext = succ.getDeltaNegated();
+			}
+			// if (delta > 0.0/100 && delta < 2.0/100 && deltaPredPred<0 && deltaPredPredPred<deltaPred && this.close<this.open) { //AllShorts= +0.62% #5056
+
+			if (delta > 0.0 / 100 && delta < 1.0 / 100 && deltaPred < -1.0 / 100 && this.close < this.open) { // AllShorts= +0.62% #5056
+				if (deltaNext > 0.1 / 100)
+					return new RGB(0, 255, 0);
+				else
+					return new RGB(255, 0, 0);
+
+			}
+		}
 		return new RGB(255, 255, 255);
+	}
+
+	public float getDelta() {
+		return this.close / pred().close - 1;
+	}
+
+	public float getDeltaReverse() {
+		return this.close / succ.close - 1;
+	}
+
+	public float getDeltaNegated() {
+		return this.close / succ.close - 1;
 	}
 
 	@Override
 	public String toString() {
-		return aStocks.getStockName() + "   " + Stock.dateFormat.format(date) + "   " + close + "€";
+		return aStocks.getStockName() + " [" + aStocks.getGroup() + "]   " + Stock.dateFormat.format(date) + "   " + close + "$";
 	}
 
 	@Override
@@ -192,4 +251,132 @@ public class Stock implements ITaggedValues {
 	public void setVolume(long volume) {
 		this.volume = volume;
 	}
+
+	public void setBuyers(int buyers) {
+		this.buyers = buyers;
+	}
+
+	public void setSellers(int sellers) {
+		this.sellers = sellers;
+	}
+
+	public int getBuyers() {
+		return buyers;
+	}
+
+	public int getSellers() {
+		return sellers;
+	}
+
+	public void setBuyersPeople(int buyersPeople) {
+		this.buyersPeople = buyersPeople;
+	}
+
+	public void setSellersPeople(int sellersPeople) {
+		this.sellersPeople = sellersPeople;
+	}
+
+	public int getBuyersPeople() {
+		return this.buyersPeople;
+	}
+
+	public int getSellersPeople() {
+		return this.sellersPeople;
+	}
+
+	public boolean same(Stock istock) {
+		return volume == istock.volume && open == istock.open && close == istock.close && low == istock.low && high == istock.high && buyers == istock.buyers && sellers == istock.sellers && buyersPeople == istock.buyersPeople && sellersPeople == istock.sellersPeople;
+	}
+
+	public void addBuyer(int buyVolumne, float buyPrice, int sellVolumne, float sellPrice, int pos) {
+		depths[pos * 4 + 0] = buyVolumne;
+		depths[pos * 4 + 1] = buyPrice;
+		depths[pos * 4 + 2] = sellVolumne;
+		depths[pos * 4 + 3] = sellPrice;
+		buyVolumnes += buyVolumne;
+		selVolumnes += sellVolumne;
+	}
+
+	public int getBuyVolumne(int pos) {
+		return (int) depths[pos * 4 + 0];
+	}
+
+	public float getBuyPrice(int pos) {
+		return depths[pos * 4 + 1];
+	}
+
+	public int getSellVolumne(int pos) {
+		return (int) depths[pos * 4 + 2];
+	}
+
+	public float getSellPrice(int pos) {
+		return depths[pos * 4 + 3];
+	}
+
+	public int getBuyVolumnes() {
+		return buyVolumnes;
+	}
+
+	public int getSelVolumnes() {
+		return selVolumnes;
+	}
+
+	public float getBuyPriceAtVolumne(int maxVolumne) {
+		float result = 0;
+		int volumne = 0;
+		for (int pos = 0; pos < getDepth(); pos++) {
+			int vol = Math.min(getBuyVolumne(pos), maxVolumne);
+			result = getBuyPrice(pos) * vol;
+			volumne = vol;
+			maxVolumne -= vol;
+			if (maxVolumne == 0) {
+				return result / volumne;
+			}
+		}
+		return result / volumne;
+	}
+
+	public float getSellPriceAtVolumne(int maxVolumne) {
+		float result = 0;
+		int volumne = 0;
+		for (int pos = 0; pos < getDepth(); pos++) {
+			int vol = Math.min(getSellVolumne(pos), maxVolumne);
+			result = getSellPrice(pos) * vol;
+			volumne = vol;
+			maxVolumne -= vol;
+			if (maxVolumne == 0) {
+				return result / volumne;
+			}
+		}
+		return result / volumne;
+	}
+
+	public float getBuyPriceForVolumne(int maxVolumne) {
+		float result = 0;
+		int volumne = 0;
+		for (int pos = 0; pos < getDepth(); pos++) {
+			int vol = Math.min(getBuyVolumne(pos), maxVolumne);
+			result += getBuyPrice(pos) * vol;
+			volumne += vol;
+			maxVolumne -= vol;
+		}
+		return result / volumne;
+	}
+
+	public float getSellPriceForVolumne(int maxVolumne) {
+		float result = 0;
+		int volumne = 0;
+		for (int pos = 0; pos < getDepth(); pos++) {
+			int vol = Math.min(getSellVolumne(pos), maxVolumne);
+			result += getSellPrice(pos) * vol;
+			volumne += vol;
+			maxVolumne -= vol;
+		}
+		return result / volumne;
+	}
+
+	private int getDepth() {
+		return depths.length / 4;
+	}
+
 }

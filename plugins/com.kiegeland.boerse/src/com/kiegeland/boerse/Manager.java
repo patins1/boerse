@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.stream.Collectors;
 
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
@@ -42,10 +43,12 @@ public class Manager {
 
 	public static List<Markt> maerkte = new ArrayList<Markt>();
 
-	public static String[] marktNames = new String[] { "GDAXI", "TECDAX", "MDAXI"
-	/* , "SDAXI" , "DJI", "IXIC", "NDX", "STOXX50E" */};
+	public static String[] marktNames = new String[] { "ASX"
+			/* , "SDAXI" , "DJI", "IXIC", "NDX", "STOXX50E" */ };
 
 	public static List<Condition> conditions;
+
+	public static boolean CourseOfSales;
 
 	static {
 		conditions = new ArrayList<Condition>();
@@ -71,14 +74,8 @@ public class Manager {
 				System.err.println("cannot load markt " + marktName);
 				continue;
 			}
-			for (Stocks aktie : symbols) {
-				String fileName = marktDir + "/" + aktie.getFileName();
-				if (aktie.getSymbol().equals("HRX.DE"))
-					continue;
-				if (readStocks(aktie, new File(fileName))) {
-					stockz.add(aktie);
-				}
-			}
+			stockz = symbols.stream().filter(aktie -> readStocks(aktie, new File(marktDir + "/" + aktie.getFileName()))).collect(Collectors.toList());
+
 			markt.setStocks(stockz);
 			maerkte.add(markt);
 		}
@@ -171,43 +168,98 @@ public class Manager {
 
 	static private boolean readStocks(Stocks result, File file) {
 		List<Stock> stocks = new ArrayList<Stock>();
-		try {
-			BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+		try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)))) {
+
 			String stockData;
 
 			while ((stockData = br.readLine()) != null) {
 				StringTokenizer stockTok = new StringTokenizer(stockData, ",\"");
 				String date = stockTok.nextToken();
-				if ("Date".equals(date))
-					continue;
-				Date _date = Stock.dateFormat.parse(date);
-				Stock stock = new Stock(result);
-				stock.setDate(_date);
-				stock.setOpen(new Float(stockTok.nextToken()));
-				stock.setHigh(new Float(stockTok.nextToken()));
-				stock.setLow(new Float(stockTok.nextToken()));
-				stock.setClose(new Float(stockTok.nextToken()));
-				stock.setVolume(new Long(stockTok.nextToken()));
-				stock.setAdjClose(new Float(stockTok.nextToken()));
-				if (stock.close <= 0) {
-					System.out.println("" + stock + " is disregard because close=" + stock.close);
-					return false;
+				if ("Course Of Sales".equals(date)) {
+					CourseOfSales = true;
+					// Stock.dateFormat = Stock.dateFormat2;
 				}
+				if ("Date".equals(date) || "Course Of Sales".equals(date) || "Time".equals(date))
+					continue;
+				Stock stock = new Stock(result);
+				if (CourseOfSales) {
+					stock.setDate(Stock.dateFormat2.parse(date));
+					stock.setOpen(new Float(stockTok.nextToken()));
+					stock.setVolume(new Long(stockTok.nextToken()));
+					float value = new Float(stockTok.nextToken());
+					String cond = stockTok.hasMoreTokens() ? stockTok.nextToken() : "";
+					if (stock.volume > 20000) {
+						System.out.println(cond + ":" + stock.volume);
+					}
+					if ("S3 XT".equals(cond)) {
+						continue;
+					}
+
+					stock.setOpen(value / stock.getVolume());
+					stock.setAdjClose(stock.getOpen());
+					stock.setHigh(stock.getOpen());
+					stock.setLow(stock.getOpen());
+					stock.setClose(stock.getOpen());
+
+				} else {
+					stock.setDate(Stock.dateFormat.parse(date));
+					stock.setOpen(new Float(stockTok.nextToken()));
+					stock.setHigh(new Float(stockTok.nextToken()));
+					stock.setLow(new Float(stockTok.nextToken()));
+					stock.setClose(new Float(stockTok.nextToken()));
+					stock.setVolume(new Long(stockTok.nextToken()));
+					stock.setAdjClose(new Float(stockTok.nextToken()));
+				}
+				// if (CourseOfSales && (stock.date.getHours() < 10 || stock.date.getHours() >= 16)) {
+				// continue;
+				// }
+				if (stock.close <= 0 || CourseOfSales && stock.getVolume() <= 0) {
+					System.out.println("" + stock + " is disregard because close=" + stock.close);
+					if (!CourseOfSales)
+						return false;
+					else
+						continue;
+				}
+				// if (stocks.isEmpty() && stock.close * stock.volume <10000000) {
+				// System.out.println("" + stock + " is disregard because too less volumn: " + stock.close +"*"+ stock.volume);
+				//// br.close();
+				//// file.delete();
+				// return false;
+				// }
 				stocks.add(stock);
 			}
 		} catch (Exception e1) {
-			System.err.println("cannot load symbol " + result.getSymbol());
+			System.err.println("cannot load symbol " + result.getSymbol() + ": " + e1.getMessage());
 			// throw new RuntimeException(e1);
+		}
+		if (CourseOfSales && false) {
+			List<Stock> stocks2 = new ArrayList<Stock>();
+			for (int i = 0; i < 6 * 60; i++) {
+				stocks2.add(null);
+			}
+			for (Stock stock : stocks) {
+				int index = (stock.date.getHours() - 10) * 60 + stock.date.getMinutes();
+				Stock stock2 = stocks2.get(index);
+				if (stock2 == null) {
+					stocks2.set(index, stock);
+					continue;
+				}
+				stock2.setLow(Math.min(stock2.getLow(), stock.getLow()));
+				stock2.setHigh(Math.max(stock2.getHigh(), stock.getHigh()));
+				stock2.setOpen((stock2.getOpen() * stock2.getVolume() + stock.getOpen() * stock.getVolume()) / (stock.getVolume() + stock2.getVolume()));
+				stock2.setVolume(stock2.getVolume() + stock.getVolume());
+				stock2.setClose(stock2.getOpen());
+			}
+			while (stocks2.remove(null)) {
+				stocks2.remove(null);
+			}
+			stocks = stocks2;
+			Collections.reverse(stocks);
 		}
 		if (stocks.isEmpty())
 			return false;
 		Collections.reverse(stocks);
 		result.setStocks(stocks);
-		int index = 0;
-		for (Stock stock : result.getStocks()) {
-			stock.setIndex(index);
-			index++;
-		}
 		return true;
 	}
 
@@ -219,20 +271,27 @@ public class Manager {
 			String stockData;
 
 			while ((stockData = br.readLine()) != null) {
-				StringTokenizer stockTok = new StringTokenizer(stockData, ";\"");
-				Stocks stock = new Stocks(stockTok.nextToken());
-				stockTok.nextToken();
-				stockTok.nextToken();
-				String date = stockTok.nextToken();
-				date = date.substring(6, 6 + 4) + "-" + date.substring(3, 3 + 2) + "-" + date.substring(0, 0 + 2);
-				Date _date = Stock.dateFormat.parse(date);
-				stock.setDate(_date);
-				stockTok.nextToken();
-				stockTok.nextToken();
-				stockTok.nextToken();
-				stockTok.nextToken();
-				stock.setVolume(new Long(stockTok.nextToken().trim()));
-				result.add(stock);
+				StringTokenizer stockTok = new StringTokenizer(stockData, ",\"");
+				try {
+					String name = stockTok.nextToken();
+					String symbol = stockTok.nextToken();
+					String group = stockTok.nextToken();
+					if (symbol.equals("ASX code"))
+						continue;
+					if (group.equals("Class Pend"))
+						continue;
+					if (group.equals("Not Applic"))
+						continue;
+					Stocks stock = new Stocks(symbol);
+					stock.setGroup(group);
+					stock.setName(name);
+					result.add(stock);
+				}
+
+				catch (Exception e) {
+					// throw new RuntimeException(e1);
+					System.out.println(e.getMessage());
+				}
 			}
 		} catch (Exception e1) {
 			// throw new RuntimeException(e1);
@@ -271,21 +330,25 @@ public class Manager {
 				File metadataFile = markt.getMetaFile();
 				InputStream contentMetadata;
 				if (metadataFile.exists()) {
-					continue;
-					// contentMetadata = new FileInputStream(new File(marktDir
-					// + "/" + METADATA));
+					// continue;
+					contentMetadata = new FileInputStream(metadataFile);
 				} else {
-					String kurseString = Utilities.downloadURL("http://de.old.finance.yahoo.com/d/quotes.csv?s=@%5E" + markt.getName() + "&f=sl1d1t1c1ohgv&e=.csv");
+					String kurseString = Utilities.downloadURL("http://www.asx.com.au/asx/research/ASXListedCompanies.csv");
 					Utilities.toFile(metadataFile, kurseString);
 					contentMetadata = new StringBufferInputStream(kurseString);
 				}
 				Collection<Stocks> symbols = extractSymbols(contentMetadata);
 				for (Stocks symbol : symbols) {
 					File kursFile = new File(marktDir + "/" + symbol.getFileName());
-					if (!kursFile.exists()) {
+					if (kursFile.exists()) {
 						// "http://ichart.yahoo.com/table.csv?s=IFX.DE&d=11&e=31&f=2008&g=d&a=2&b=14&c=2000&ignore=.csv
-						String kursString = Utilities.downloadURL("http://ichart.yahoo.com/table.csv?s=" + symbol.getSymbol() + "&d=11&e=14&f=2009&g=d&a=0&b=0&c=1900&ignore=.csv");
-						Utilities.toFile(kursFile, kursString);
+						try {
+							String kursString = Utilities.downloadURL("http://ichart.yahoo.com/table.csv?s=" + symbol.getSymbol() + ".AX&d=12&e=09&f=2016&g=d&a=0&b=01&c=1980&ignore=.csv");
+							Utilities.toFile(kursFile, kursString);
+						} catch (Exception e) {
+							System.err.println(symbol.getGroup() + "  " + e.getMessage());
+							// throw new RuntimeException(e);
+						}
 					}
 				}
 			}
