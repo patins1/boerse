@@ -11,13 +11,11 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.RGB;
 
-import com.kiegeland.boerse.domain.Stock;
-
+import de.kupzog.ktable.DefaultCellRenderer;
 import de.kupzog.ktable.KTableCellEditor;
 import de.kupzog.ktable.KTableCellRenderer;
 import de.kupzog.ktable.KTableDefaultModel;
-import de.kupzog.ktable.renderers.DefaultCellRenderer;
-import de.kupzog.ktable.renderers.TextCellRenderer;
+import de.kupzog.ktable.TextCellRenderer;
 
 public class KBoersenModel extends KTableDefaultModel {
 
@@ -39,16 +37,23 @@ public class KBoersenModel extends KTableDefaultModel {
 		return null;
 	}
 
-	@Override
+	public Color doGetCellColor(int col, int row) {
+		try {
+			ITaggedValues stock = stocks.get(row - 1);
+			RGB rgb = stock.getBackgoundColor(col);
+			Color color = new Color(null, rgb);
+			return color;
+		} catch (Throwable e) {
+			return null;
+		}
+	}
+
 	public KTableCellRenderer doGetCellRenderer(int col, int row) {
 		if (row == 0)
 			return renderHeader;
 		try {
-			ITaggedValues stock = stocks.get(row - 1);
-			RGB rgb = stock.getBackgoundColor(col);
 			TextCellRenderer renderCell = new TextCellRenderer(DefaultCellRenderer.INDICATION_FOCUS_ROW);
-			Color color = new Color(null, rgb);
-			renderCell.setBackground(color);
+			renderCell.setBackground(doGetCellColor(col, row));
 			// renderCell.setAlignment(SWTX.ALIGN_HORIZONTAL_RIGHT);
 			return renderCell;
 		} catch (Throwable e) {
@@ -147,7 +152,7 @@ public class KBoersenModel extends KTableDefaultModel {
 		}
 	}
 
-	public int getRowOf(Stock selection) {
+	public int getRowOf(Object selection) {
 		int index = stocks.indexOf(selection);
 		if (index >= 0)
 			return index + 1;

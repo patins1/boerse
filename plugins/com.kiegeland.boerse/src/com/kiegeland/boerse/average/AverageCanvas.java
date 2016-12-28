@@ -8,6 +8,7 @@ import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Drawable;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -84,7 +85,6 @@ public class AverageCanvas extends Canvas {
 			return;
 		}
 
-
 		Point size = new Point(averageConfig.getLookRange(), getSize().y);
 		chart = new float[size.x][size.y];
 		int[][] chartCount = new int[size.x][size.y];
@@ -117,7 +117,7 @@ public class AverageCanvas extends Canvas {
 					// continue;
 
 					float weight = (float) (Math.pow(zinsen, this.averageConfig.macht) - 1);
-					weight=1;
+					weight = 1;
 					totalGraphis++;
 					int stockX = 0;
 					if (stopAt != null)
@@ -235,8 +235,8 @@ public class AverageCanvas extends Canvas {
 				}
 			}
 		}
-	
-			System.out.println("Calc chart finished (total graphs=" + totalGraphis + ")");
+
+		System.out.println("Calc chart finished (total graphs=" + totalGraphis + ")");
 
 		// float max = Float.MIN_VALUE;
 		// float min = Float.MAX_VALUE;
@@ -273,11 +273,10 @@ public class AverageCanvas extends Canvas {
 				cachedImage.dispose();
 			cachedImage = new Image(Display.getCurrent(), size.width, size.height);
 
-			gc = new GC(cachedImage);
+			gc = new GC((Drawable) cachedImage);
 
 			gc.setForeground(new Color(null, 255, 255, 255));
 			gc.fillRectangle(size);
-
 
 			float factorX = averageConfig.getLookRange() / (float) size.width;
 			for (int x = 0; x < size.width; x++) {

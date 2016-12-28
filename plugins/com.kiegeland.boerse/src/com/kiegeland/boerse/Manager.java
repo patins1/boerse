@@ -343,10 +343,10 @@ public class Manager {
 					if (kursFile.exists()) {
 						// "http://ichart.yahoo.com/table.csv?s=IFX.DE&d=11&e=31&f=2008&g=d&a=2&b=14&c=2000&ignore=.csv
 						try {
-							String kursString = Utilities.downloadURL("http://ichart.yahoo.com/table.csv?s=" + symbol.getSymbol() + ".AX&d=12&e=09&f=2016&g=d&a=0&b=01&c=1980&ignore=.csv");
-							Utilities.toFile(kursFile, kursString);
+							// String kursString = Utilities.downloadURL("http://ichart.yahoo.com/table.csv?s=" + symbol.getSymbol() + ".AX&d=12&e=09&f=2016&g=d&a=0&b=01&c=1980&ignore=.csv");
+							// Utilities.toFile(kursFile, kursString);
 						} catch (Exception e) {
-							System.err.println(symbol.getGroup() + "  " + e.getMessage());
+							// System.err.println(symbol.getGroup() + " " + e.getMessage());
 							// throw new RuntimeException(e);
 						}
 					}

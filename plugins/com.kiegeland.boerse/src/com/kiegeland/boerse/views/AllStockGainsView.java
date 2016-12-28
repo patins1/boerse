@@ -49,7 +49,7 @@ public class AllStockGainsView extends ViewPart {
 					Gain gain = (Gain) tv;
 					if (gain.getStocks() != null) {
 						Stocks aStocks = gain.getStocks();
-//						System.out.println("" + aStocks.getSymbol() + " vol=" + aStocks.volume + " vol-lastest=" + aStocks.getLatestStock().volume);
+						// System.out.println("" + aStocks.getSymbol() + " vol=" + aStocks.volume + " vol-lastest=" + aStocks.getLatestStock().volume);
 						OneStockGainsView viewPart2 = (OneStockGainsView) PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().findView("com.kiegeland.boerse.views.OneStockGainsView");
 						if (viewPart2 != null)
 							viewPart2.setStocks(aStocks);
@@ -58,10 +58,10 @@ public class AllStockGainsView extends ViewPart {
 							viewPart3.setStocks(aStocks, aStocks.getLatestStock());
 						ChartDialog.displayIfOpened(aStocks, aStocks.getLatestStock());
 					} else {
-						double allShorts=0;
-						int shortsCount=0;
-						OneStockDaysView.shortages=0;
-						OneStockDaysView.shortagesGreen=0;
+						double allShorts = 0;
+						int shortsCount = 0;
+						OneStockDaysView.shortages = 0;
+						OneStockDaysView.shortagesGreen = 0;
 						for (Markt markt : Manager.getEnabledMaerkte()) {
 							for (Stocks aStocks : markt.getStocks()) {
 								double shorts = OneStockDaysView.getShorts(aStocks);
@@ -71,7 +71,7 @@ public class AllStockGainsView extends ViewPart {
 								}
 							}
 						}
-						System.out.println("AllShorts= "+Utilities.printPercentage(allShorts/shortsCount)+ " #"+OneStockDaysView.shortages+" GreenPropability= "+Utilities.printPercentage(1.0*OneStockDaysView.shortagesGreen/OneStockDaysView.shortages));
+						System.out.println("AllShorts= " + Utilities.printPercentage(allShorts / shortsCount) + " #" + OneStockDaysView.shortages + " GreenPropability= " + Utilities.printPercentage(1.0 * OneStockDaysView.shortagesGreen / OneStockDaysView.shortages));
 					}
 				}
 			}
@@ -108,9 +108,9 @@ public class AllStockGainsView extends ViewPart {
 				// / (float) o2.stocks.volume - o1.stocks.getLatestStock().volume
 				// / (float) o1.stocks.volume);
 
-//				int result = o1.summarizeSize - o2.summarizeSize;
-//				if (result != 0)
-//					return result;
+				// int result = o1.summarizeSize - o2.summarizeSize;
+				// if (result != 0)
+				// return result;
 				float success = o1.success - o2.success;
 				if (success != 0)
 					return success < 0 ? -1 : 1;
@@ -140,9 +140,10 @@ public class AllStockGainsView extends ViewPart {
 					summedGain.success = success / summedGain.summarizeSize;
 					Stock buy = aStocks.getLatestStock();
 					Stock base = buy.getStock(-130);
-					if (base!=null)
-						summedGain.success = buy.close/base.close; else
-						summedGain.success =0;
+					if (base != null)
+						summedGain.success = buy.close / base.close;
+					else
+						summedGain.success = 0;
 					gainDesc += " " + (Utilities.printPercentage(summedGain.success));
 				}
 				summedGain.setSymbol(gainDesc + " " + aStocks.getSymbol());

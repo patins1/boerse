@@ -3,179 +3,115 @@
  */
 package com.kiegeland.boerse.chart;
 
+import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import org.eclipse.birt.chart.device.IDeviceRenderer;
-import org.eclipse.birt.chart.exception.ChartException;
 import org.eclipse.birt.chart.factory.GeneratedChartState;
 import org.eclipse.birt.chart.factory.Generator;
 import org.eclipse.birt.chart.model.Chart;
 import org.eclipse.birt.chart.model.attribute.Bounds;
 import org.eclipse.birt.chart.model.attribute.impl.BoundsImpl;
 import org.eclipse.birt.chart.util.PluginSettings;
-import org.eclipse.swt.events.ControlAdapter;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.events.ControlEvent;
-import org.eclipse.swt.events.PaintEvent;
-import org.eclipse.swt.events.PaintListener;
-import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Display;
-
-
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Label;
 
 public class ChartCanvas extends Canvas {
 
-	/**
-	 * The device render for rendering chart.
-	 */
-	protected IDeviceRenderer render = null;
-
-	/**
-	 * The chart instantce.
-	 */
 	protected Chart chart = null;
 
-	/**
-	 * The chart state.
-	 */
-	protected GeneratedChartState state = null;
+	Control chartControl;
 
-	/**
-	 * The image which caches the chart image to improve drawing performance.
-	 */
-	private Image cachedImage = null;
-
-	/**
-	 * Constructs one canvas containing chart.
-	 * 
-	 * @param parent
-	 *            a composite control which will be the parent of the new instance (cannot be null)
-	 * @param style
-	 *            the style of control to construct
-	 */
 	public ChartCanvas(Composite parent, int style) {
-		super(parent, style);
+		super(parent, style | SWT.NO_BACKGROUND);
 
-		// initialize the SWT rendering device
-		try {
-			PluginSettings ps = PluginSettings.instance();
-			render = ps.getDevice("dv.SWT");
-		} catch (ChartException ex) {
-			ex.printStackTrace();
+		setLayout(new FillLayout());
+		boolean USE_BROWSER = false;
+		if (USE_BROWSER) {
+			chartControl = new Browser(this, SWT.NONE);
+		} else {
+			chartControl = new Label(this, SWT.NONE);
 		}
 
-		addPaintListener(new PaintListener() {
+		addControlListener(new SmartControlAdapter() {
 
-			public void paintControl(PaintEvent e) {
-
-				Composite co = (Composite) e.getSource();
-				final Rectangle rect = co.getClientArea();
-
-				if (cachedImage == null) {
-					buildChart();
-					drawToCachedImage(rect);
-				}
-				e.gc.drawImage(cachedImage, 0, 0, cachedImage.getBounds().width, cachedImage.getBounds().height, 0, 0, rect.width, rect.height);
-
+			protected void handleControlResized(ControlEvent event) {
+				updateChart();
 			}
+
 		});
 
-		addControlListener(new ControlAdapter() {
-
-			public void controlResized(ControlEvent e) {
-
-				buildChart();
-				cachedImage = null;
-			}
-		});
 	}
 
-	/**
-	 * Builds the chart state. This method should be call when data is changed.
-	 */
-	private void buildChart() {
-		// Point size = getSize();
-		// // size=new Point(300,100);
-		// System.out.println("Calc chart..");
-		// Bounds bo = BoundsImpl.create(0, 0, size.x, size.y);
-		// int resolution = render.getDisplayServer().getDpiResolution();
-		// bo.scale(72d / resolution);
-		// try {
-		// Generator gr = Generator.instance();
-		// state = gr.build(render.getDisplayServer(), chart, bo, null, null, null);
-		// } catch (ChartException ex) {
-		// ex.printStackTrace();
-		// }
-		// System.out.println("Calc chart finished");
-	}
-
-	/**
-	 * Draws the chart onto the cached image in the area of the given <code>Rectangle</code>.
-	 * 
-	 * @param size
-	 *            the area to draw
-	 */
-	public void drawToCachedImage(Rectangle size) {
-		GC gc = null;
-		try {
-			if (cachedImage != null)
-				cachedImage.dispose();
-			cachedImage = new Image(Display.getCurrent(), size.width, size.height);
-
-			gc = new GC(cachedImage);
-			render.setProperty(IDeviceRenderer.GRAPHICS_CONTEXT, gc);
-
-			Bounds bo = BoundsImpl.create(0, 0, size.width, size.height);
-			bo.scale(72d / render.getDisplayServer().getDpiResolution());
-			Generator gr = Generator.instance();
-			try {
-				state = gr.build(render.getDisplayServer(), chart, bo, null, null, null);
-			} catch (ChartException ex) {
-				ex.printStackTrace();
-			}
-			gr.render(render, state);
-		} catch (ChartException ex) {
-			ex.printStackTrace();
-		} finally {
-			if (gc != null)
-				gc.dispose();
-		}
-	}
-
-	/**
-	 * Returns the chart which is contained in this canvas.
-	 * 
-	 * @return the chart contained in this canvas.
-	 */
-	public Chart getChart() {
-		return chart;
-	}
-
-	/**
-	 * Sets the chart into this canvas. Note: When the chart is set, the cached image will be dopped, but this method doesn't reset the flag <code>cachedImage</code>.
-	 * 
-	 * @param chart
-	 *            the chart to set
-	 */
 	public void setChart(Chart chart) {
-		if (cachedImage != null)
-			cachedImage.dispose();
-
-		cachedImage = null;
 		this.chart = chart;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.eclipse.swt.widgets.Widget#dispose()
-	 */
-	public void dispose() {
-		if (cachedImage != null)
-			cachedImage.dispose();
-		super.dispose();
+	public void updateChart() {
+		try {
+			if (chart != null)
+				drawChart(chart);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void drawChart(Chart chart) throws Exception {
+		Point size = getSize();
+
+		IDeviceRenderer render = null;
+		PluginSettings ps = PluginSettings.instance();
+		render = ps.getDevice("dv.BMP");
+		Bounds bounds = BoundsImpl.create(0, 0, size.x, size.y);
+		int resolution = render.getDisplayServer().getDpiResolution();
+		bounds.scale(72d / resolution);
+		GeneratedChartState state;
+		Generator gr = Generator.instance();
+		state = gr.build(render.getDisplayServer(), chart, bounds, null, null, null);
+		File tmpFile = File.createTempFile("birtchart", "");
+		render.setProperty(IDeviceRenderer.FILE_IDENTIFIER, tmpFile);
+		gr.render(render, state);
+
+		Image img = new Image(getDisplay(), tmpFile.getAbsolutePath());
+
+		if (chartControl instanceof Browser) {
+			Browser browser = (Browser) chartControl;
+			String url;
+			try {
+				url = getURL(img);
+			} catch (Throwable t) {
+				url = "file://" + tmpFile.getCanonicalPath();
+				tmpFile = null;
+			}
+			browser.setText("<style>* {padding:0; margin:0; border:0; }</style><img src='" + url + "' onmousewheel='javascript:syncZoom(event.wheelDelta, event.x);' width='" + size.x + "' height='" + size.y + "'/>");
+
+		} else {
+			Label label = (Label) chartControl;
+			label.setImage(img);
+		}
+
+		if (tmpFile != null) {
+			tmpFile.delete();
+		}
+
+	}
+
+	public static String getURL(Image img) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException, NoSuchMethodException, SecurityException {
+		// use reflective methods - as it could compile only with the RAP target
+		Class<?> clazz = Class.forName("org.eclipse.swt.internal.graphics.ImageFactory");
+		Method m = clazz.getMethod("getImagePath");
+		return "../../" + m.invoke(null, img);
+		// return "../../" + org.eclipse.swt.internal.graphics.ImageFactory.getImagePath(img);
+		// return "../" + img.internalImage.getResourceName();
 	}
 
 }

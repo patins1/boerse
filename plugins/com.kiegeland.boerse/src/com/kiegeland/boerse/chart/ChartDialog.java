@@ -14,9 +14,8 @@ import java.util.regex.Pattern;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.MouseEvent;
-import org.eclipse.swt.events.MouseMoveListener;
-import org.eclipse.swt.events.MouseWheelListener;
+import org.eclipse.swt.browser.Browser;
+import org.eclipse.swt.browser.BrowserFunction;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.FillLayout;
@@ -24,6 +23,8 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 
@@ -33,6 +34,10 @@ import com.kiegeland.boerse.util.Utilities;
 
 public class ChartDialog extends Dialog {
 
+	public int range = 32;
+
+	public int offset = 0;
+
 	public static ChartDialog current = null;
 
 	private ChartCanvas canvas;
@@ -41,7 +46,7 @@ public class ChartDialog extends Dialog {
 
 	private Stock stock;
 
-	private Button introdayButton;
+	private Button intradayButton;
 
 	private int oriX;
 
@@ -68,7 +73,7 @@ public class ChartDialog extends Dialog {
 
 	@Override
 	protected int getShellStyle() {
-		return super.getShellStyle() | SWT.RESIZE | SWT.MAX;
+		return super.getShellStyle() | SWT.RESIZE | SWT.MAX | SWT.NO_BACKGROUND;
 	}
 
 	@Override
@@ -76,43 +81,64 @@ public class ChartDialog extends Dialog {
 		Composite result = (Composite) super.createDialogArea(parent);
 		result.setLayout(new FillLayout());
 		canvas = new ChartCanvas(result, SWT.NO_BACKGROUND);
-		calcChart();
 
-		result.addMouseWheelListener(new MouseWheelListener() {
-			public void mouseScrolled(MouseEvent e) {
-				int count = e.count;
-				int rangeOld = BoersenChart.range;
-				BoersenChart.range = Math.max(3, count > 0 ? BoersenChart.range * 3 / 4 : BoersenChart.range * 4 / 3);
-				int rangeDiff = BoersenChart.range - rangeOld;
-				BoersenChart.offset = Math.max(0, BoersenChart.offset - (rangeDiff - rangeDiff * e.x / (canvas.getSize().x - 120)));
-				repaint();
-			}
-		});
+		if (canvas.chartControl instanceof Browser) {
+			Browser browser = (Browser) canvas.chartControl;
+			new BrowserFunction(browser, "syncZoom") {
 
-		canvas.addMouseMoveListener(new MouseMoveListener() {
-
-			@Override
-			public void mouseMove(MouseEvent e) {
-				if ((e.stateMask & SWT.BUTTON1) != 0) {
-					int diff = e.x - oriX;
-					BoersenChart.offset = Math.max(0, orioffset + BoersenChart.range * diff / (canvas.getSize().x - 120));
-					repaint();
-					System.out.println("BoersenChart.offset:" + BoersenChart.offset);
-				} else {
-					oriX = e.x;
-					orioffset = BoersenChart.offset;
+				public Object function(Object[] arguments) {
+					Integer count = ((Number) arguments[0]).intValue();
+					Integer x = ((Number) arguments[1]).intValue();
+					processZoom(count, x);
+					return true;
 				}
-			}
 
-		});
+			};
+		} else {
+
+			result.addListener(SWT.MouseWheel, new Listener() {
+
+				@Override
+				public void handleEvent(Event e) {
+					processZoom(e.count, e.x);
+				}
+
+			});
+
+			canvas.chartControl.addListener(SWT.MouseMove, new Listener() {
+
+				@Override
+				public void handleEvent(Event e) {
+					if ((e.stateMask & SWT.BUTTON1) != 0) {
+						int diff = e.x - oriX;
+						offset = Math.max(0, orioffset + range * diff / (canvas.getSize().x - 120));
+						repaint();
+					} else {
+						oriX = e.x;
+						orioffset = offset;
+					}
+				}
+
+			});
+
+		}
 
 		return result;
+	}
+
+	private void processZoom(Integer count, Integer x) {
+		int rangeOld = range;
+		range = Math.max(3, count > 0 ? range * 3 / 4 : range * 4 / 3);
+		int rangeDiff = range - rangeOld;
+		offset = Math.max(0, offset - (rangeDiff - rangeDiff * x / (canvas.getSize().x - 120)));
+		repaint();
 	}
 
 	private void calcChart() {
 		if (canvas != null) {
 			try {
-				if (BoersenChart.intraday) {
+				BoersenChart boersenChart = null;
+				if (intradayButton != null && intradayButton.getSelection()) {
 					if (istocks == null) {
 						int samesame = 0;
 						istocks = new Stocks(stocks.getSymbol());
@@ -161,18 +187,58 @@ public class ChartDialog extends Dialog {
 					}
 
 					canvas.setVisible(istocks.size() != 0);
-					if (canvas.isVisible())
-						canvas.setChart(new BoersenChart(istocks, istocks.getLatestStock()).createCFStockChart());
-
+					if (canvas.isVisible()) {
+						boersenChart = new BoersenChart(calcCutout(istocks), istocks.getLatestStock());
+					}
 				} else {
 					canvas.setVisible(true);
-					canvas.setChart(new BoersenChart(stocks, stock).createCFStockChart());
+					boersenChart = new BoersenChart(calcCutout(stocks), stock);
 				}
+
+				if (boersenChart != null) {
+					boersenChart.intraday = intradayButton.getSelection();
+					boersenChart.showDepth = depthButton.getSelection();
+					boersenChart.showOrders = ordersButton.getSelection();
+					boersenChart.showVolumn = volumnsButton.getSelection();
+					boersenChart.showFitting = fittingButton.getSelection();
+					boersenChart.showProfit = profitButton.getSelection();
+					canvas.setChart(boersenChart.createCFStockChart());
+				}
+
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 			enabledButtons();
 		}
+	}
+
+	public Stocks calcCutout(Stocks original) {
+
+		int toIndex = Math.min(original.size() - offset, original.size());
+		if (toIndex - range < 0) {
+			offset = Math.max(0, offset + (toIndex - range));
+			toIndex = Math.min(original.size() - offset, original.size());
+		}
+		int fromIndex = toIndex - range;
+		if (fromIndex < 0) {
+			range = Math.max(1, range + fromIndex);
+			fromIndex = Math.max(0, toIndex - range);
+		}
+		List<Stock> subList = original.subList(fromIndex, toIndex);
+		// while (subList.size() >= 128)
+		// subList = halve(subList);
+		return new Stocks(original, subList);
+	}
+
+	private List<Stock> halve(List<Stock> subList) {
+		List<Stock> result = new ArrayList<Stock>();
+		int index = 0;
+		for (Stock stock : subList) {
+			if ((subList.size() - 1 + index) / 2 * 2 == subList.size() - 1 + index)
+				result.add(stock);
+			index++;
+		}
+		return result;
 	}
 
 	public static Stock parseStock(Stocks istocks, String text, Date date) {
@@ -221,16 +287,12 @@ public class ChartDialog extends Dialog {
 	}
 
 	private void enabledButtons() {
-		if (getButton(22) != null)
-			getButton(22).setEnabled(BoersenChart.range > 1);
-		if (getButton(23) != null)
-			getButton(23).setEnabled(stocks.size() > BoersenChart.range);
 	}
 
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
 		notifyButton = createCheck(parent, 30, "Notify", false);
-		introdayButton = createCheck(parent, 25, "Intraday", false);
+		intradayButton = createCheck(parent, 25, "Intraday", false);
 		depthButton = createCheck(parent, 27, "Depth", false);
 		ordersButton = createCheck(parent, 28, "Orders", false);
 		profitButton = createCheck(parent, 29, "Profit", false);
@@ -271,24 +333,18 @@ public class ChartDialog extends Dialog {
 			istocks = null;
 			repaint();
 		} else if (buttonId == 25) {
-			BoersenChart.intraday = introdayButton.getSelection();
-			BoersenChart.offset = 0;
-			BoersenChart.range = 32;
+			offset = 0;
+			range = 32;
 			repaint();
 		} else if (buttonId == 27) {
-			BoersenChart.showDepth = depthButton.getSelection();
 			repaint();
 		} else if (buttonId == 28) {
-			BoersenChart.showOrders = ordersButton.getSelection();
 			repaint();
 		} else if (buttonId == 31) {
-			BoersenChart.showVolumn = volumnsButton.getSelection();
 			repaint();
 		} else if (buttonId == 32) {
-			BoersenChart.showFitting = fittingButton.getSelection();
 			repaint();
 		} else if (buttonId == 29) {
-			BoersenChart.showProfit = profitButton.getSelection();
 			repaint();
 		} else if (buttonId == 24) {
 			try {
@@ -304,18 +360,20 @@ public class ChartDialog extends Dialog {
 
 	public void repaint() {
 		calcChart();
-		current.canvas.redraw();
+		canvas.updateChart();
+		canvas.chartControl.update();
 	}
 
 	@Override
 	protected Control createContents(Composite parent) {
-		return super.createContents(parent);
+		Control result = super.createContents(parent);
+		calcChart();
+		return result;
 	}
 
 	@Override
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
-		// newShell.setMaximized(true);
 	}
 
 	protected void setShellStyle(int newShellStyle) {
@@ -334,7 +392,7 @@ public class ChartDialog extends Dialog {
 
 	@Override
 	protected void constrainShellSize() {
-		getShell().setSize(1000, 600);
+		getShell().setSize(1300, 600);
 		super.constrainShellSize();
 	}
 
@@ -344,8 +402,7 @@ public class ChartDialog extends Dialog {
 		}
 		this.stocks = stocks;
 		this.stock = stock;
-		BoersenChart.offset = stocks.size() - 1 - stocks.indexOf(stock);
-		calcChart();
+		offset = stocks.size() - 1 - stocks.indexOf(stock);
 	}
 
 	public static void displayIfOpened(Stocks stocks, Stock stock) {
@@ -357,10 +414,11 @@ public class ChartDialog extends Dialog {
 		if (current == null) {
 			current = new ChartDialog();
 			current.setChart(stocks, stock);
+			current.calcChart();
 			current.open();
 		} else {
 			current.setChart(stocks, stock);
-			current.canvas.redraw();
+			current.repaint();
 		}
 	}
 

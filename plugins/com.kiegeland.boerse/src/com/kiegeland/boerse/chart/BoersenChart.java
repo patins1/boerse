@@ -55,53 +55,17 @@ public class BoersenChart {
 
 	private Stocks aStocks;
 	private Stock baseStock;
-	private Stocks original;
 
-	public static int range = 32;
-
-	public static int offset = 0;
-
-	public static boolean intraday = false;
-	public static boolean showDepth = false;
-	public static boolean showProfit = false;
-	public static boolean showOrders = false;
-	public static boolean showVolumn = false;
-	public static boolean showFitting = false;
+	public boolean intraday = false;
+	public boolean showDepth = false;
+	public boolean showProfit = false;
+	public boolean showOrders = false;
+	public boolean showVolumn = false;
+	public boolean showFitting = false;
 
 	public BoersenChart(Stocks aStocks, Stock baseStock) {
-		original = aStocks;
+		this.aStocks = aStocks;
 		this.baseStock = baseStock;
-		calcCutout();
-	}
-
-	public void calcCutout() {
-		aStocks = original;
-
-		int toIndex = Math.min(original.size() - offset, original.size());
-		if (toIndex - range < 0) {
-			offset = Math.max(0, offset + (toIndex - range));
-			toIndex = Math.min(original.size() - offset, original.size());
-		}
-		int fromIndex = toIndex - range;
-		if (fromIndex < 0) {
-			range = Math.max(1, range + fromIndex);
-			fromIndex = Math.max(0, toIndex - range);
-		}
-		List<Stock> subList = original.subList(fromIndex, toIndex);
-		// while (subList.size() >= 128)
-		// subList = halve(subList);
-		this.aStocks = new Stocks(original, subList);
-	}
-
-	private List<Stock> halve(List<Stock> subList) {
-		List<Stock> result = new ArrayList<Stock>();
-		int index = 0;
-		for (Stock stock : subList) {
-			if ((subList.size() - 1 + index) / 2 * 2 == subList.size() - 1 + index)
-				result.add(stock);
-			index++;
-		}
-		return result;
 	}
 
 	public final Chart createCFStockChart() throws ParseException {
@@ -121,6 +85,8 @@ public class BoersenChart {
 		ChartWithAxes cwaStock = ChartWithAxesImpl.create();
 
 		// Title
+		cwaStock.getTitle().getLabel().getCaption().getFont().setName("Arial");// $NON-NLS-1$
+		cwaStock.getTitle().getLabel().getCaption().getFont().setItalic(true);// $NON-NLS-1$
 		cwaStock.getTitle().getLabel().getCaption().setValue(baseStock != null ? baseStock.toString() : aStocks.getSymbol());// $NON-NLS-1$
 		TitleBlock tb = cwaStock.getTitle();
 		tb.setBackground(GradientImpl.create(ColorDefinitionImpl.create(0, 128, 0), ColorDefinitionImpl.create(128, 0, 0), 0, false));

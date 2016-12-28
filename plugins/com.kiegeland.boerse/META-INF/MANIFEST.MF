@@ -4,18 +4,18 @@ Bundle-Name: Boerse Plug-in
 Bundle-SymbolicName: com.kiegeland.boerse;singleton:=true
 Bundle-Version: 1.0.0
 Bundle-Activator: com.kiegeland.boerse.Activator
-Require-Bundle: org.eclipse.ui,
+Require-Bundle: org.eclipse.rap.ui;resolution:=optional,
+ org.eclipse.ui;resolution:=optional,
  org.eclipse.core.runtime,
  org.eclipse.birt.chart.device.extension,
- org.eclipse.birt.chart.device.swt,
  org.eclipse.birt.chart.engine,
  org.eclipse.birt.chart.engine.extension,
  org.eclipse.birt.core,
- org.eclipse.emf,
- org.eclipse.emf.ecore.edit,
+ com.ibm.icu,
+ org.eclipse.nebula.widgets.grid;resolution:=optional,
+ org.eclipse.rap.nebula.widgets.grid;resolution:=optional,
  com.ibm.icu
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Export-Package: com.kiegeland.boerse
-Bundle-ClassPath: library.jar,
- KTable.jar
+Bundle-ClassPath: library.jar
