@@ -66,6 +66,12 @@ public class ChartDialog extends Dialog {
 
 	private Button fittingButton;
 
+	private Button macdButton;
+
+	private Button rsiButton;
+	private Button fastSTOButton;
+	private Button normalizedButton;
+
 	public ChartDialog() {
 		super(PlatformUI.getWorkbench().getDisplay().getActiveShell());
 		this.setBlockOnOpen(false);
@@ -188,11 +194,11 @@ public class ChartDialog extends Dialog {
 
 					canvas.setVisible(istocks.size() != 0);
 					if (canvas.isVisible()) {
-						boersenChart = new BoersenChart(calcCutout(istocks), istocks.getLatestStock());
+						boersenChart = new BoersenChart(calcCutout(istocks), istocks.getLatestStock(), istocks.asList());
 					}
 				} else {
 					canvas.setVisible(true);
-					boersenChart = new BoersenChart(calcCutout(stocks), stock);
+					boersenChart = new BoersenChart(calcCutout(stocks), stock, stocks.asList());
 				}
 
 				if (boersenChart != null) {
@@ -202,6 +208,10 @@ public class ChartDialog extends Dialog {
 					boersenChart.showVolumn = volumnsButton.getSelection();
 					boersenChart.showFitting = fittingButton.getSelection();
 					boersenChart.showProfit = profitButton.getSelection();
+					boersenChart.showMACD = macdButton.getSelection();
+					boersenChart.showRSI = rsiButton.getSelection();
+					boersenChart.showFastSTO = fastSTOButton.getSelection();
+					boersenChart.showNormalized = normalizedButton.getSelection();
 					canvas.setChart(boersenChart.createCFStockChart());
 				}
 
@@ -298,6 +308,10 @@ public class ChartDialog extends Dialog {
 		profitButton = createCheck(parent, 29, "Profit", false);
 		volumnsButton = createCheck(parent, 31, "Volumn", false);
 		fittingButton = createCheck(parent, 32, "Fitting", false);
+		macdButton = createCheck(parent, 33, "MACD", false);
+		rsiButton = createCheck(parent, 34, "RSI", false);
+		fastSTOButton = createCheck(parent, 35, "Fast STO", false);
+		normalizedButton = createCheck(parent, 36, "Norm. Vol.", false);
 		createButton(parent, 26, "Update", false);
 		createButton(parent, 24, "Yahoo", false);
 		enabledButtons();
@@ -331,31 +345,22 @@ public class ChartDialog extends Dialog {
 	protected void buttonPressed(int buttonId) {
 		if (buttonId == 26) {
 			istocks = null;
-			repaint();
 		} else if (buttonId == 25) {
 			offset = 0;
 			range = 32;
-			repaint();
-		} else if (buttonId == 27) {
-			repaint();
-		} else if (buttonId == 28) {
-			repaint();
-		} else if (buttonId == 31) {
-			repaint();
-		} else if (buttonId == 32) {
-			repaint();
-		} else if (buttonId == 29) {
-			repaint();
 		} else if (buttonId == 24) {
 			try {
 				URI uri = new URI("https://au.finance.yahoo.com/echarts?s=" + stocks.getSymbol() + ".AX#symbol=" + stocks.getSymbol() + ".AX;range=5d");
 				Desktop desktop = Desktop.getDesktop();
 				desktop.browse(uri);
+				return;
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
-		} else
+		} else {
 			super.buttonPressed(buttonId);
+		}
+		repaint();
 	}
 
 	public void repaint() {

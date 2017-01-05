@@ -379,4 +379,16 @@ public class Stock implements ITaggedValues {
 		return depths.length / 4;
 	}
 
+	public void add(Stock stock, double scale) {
+		close += scale * stock.close;
+		open += scale * stock.open;
+		high += scale * stock.high;
+		low += scale * stock.low;
+		adjClose += scale * stock.adjClose;
+		if (volume < stock.volume) {
+			volume = stock.volume;
+			date = stock.date;
+		}
+	}
+
 }
