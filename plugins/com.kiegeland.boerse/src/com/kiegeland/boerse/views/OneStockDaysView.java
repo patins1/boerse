@@ -77,8 +77,8 @@ public class OneStockDaysView extends ViewPart {
 		}
 	}
 
-	static public int shortages=0;
-	static public int shortagesGreen=0;
+	static public int shortages = 0;
+	static public int shortagesGreen = 0;
 
 	public static double getShorts(Stocks stocks) {
 		int green = 0;
@@ -87,32 +87,32 @@ public class OneStockDaysView extends ViewPart {
 		for (Stock stock : stocks.asList()) {
 			if (1900 + stock.date.getYear() != 2015) {
 				RGB col = stock.getBackgoundColor(0);
-				if (col.red!=col.green) {
+				if (col.red != col.green) {
 					shortages++;
 					if (col.red == 0) {
 						green++;
 					} else if (col.green == 0) {
 						red++;
 					}
-					float gain = stock.succ.getDelta();
-					if (stock.succ.getDelta()>0) {
-//						gain += stock.succ.succ.getDelta();
-//						if (stock.succ.succ.getDelta()>0) {
-//							gainSum += stock.succ.succ.succ.getDelta();
-////							if (stock.succ.succ.succ.getDelta()>0) {
-////								gainSum += stock.succ.succ.succ.succ.getDelta();
-////							}
-//						}
+					double gain = stock.succ.getDelta();
+					if (stock.succ.getDelta() > 0) {
+						// gain += stock.succ.succ.getDelta();
+						// if (stock.succ.succ.getDelta()>0) {
+						// gainSum += stock.succ.succ.succ.getDelta();
+						//// if (stock.succ.succ.succ.getDelta()>0) {
+						//// gainSum += stock.succ.succ.succ.succ.getDelta();
+						//// }
+						// }
 					}
-					if (gain>0)
+					if (gain > 0)
 						shortagesGreen++;
-					gainSum+=gain;
+					gainSum += gain;
 				}
 			}
 		}
-		if (red!=0 || green!=0) {
-			double oneShort = gainSum/(red+green);
-			System.out.println(stocks.getSymbol() + " has " + red + "\t reds and " + green + "\tgreens; success probability "+Utilities.printPercentage(1.0*green/red-1) + "\t gain sum "+Utilities.printPercentage(gainSum)+ "\t avg. gain "+Utilities.printPercentage(oneShort));
+		if (red != 0 || green != 0) {
+			double oneShort = gainSum / (red + green);
+			System.out.println(stocks.getSymbol() + " has " + red + "\t reds and " + green + "\tgreens; success probability " + Utilities.printPercentage(1.0 * green / red - 1) + "\t gain sum " + Utilities.printPercentage(gainSum) + "\t avg. gain " + Utilities.printPercentage(oneShort));
 			return oneShort;
 		}
 		return 0;

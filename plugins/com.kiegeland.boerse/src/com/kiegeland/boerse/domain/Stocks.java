@@ -27,12 +27,9 @@ public class Stocks {
 		this.symbol = symbol;
 	}
 
-	public Stocks(Stocks original, List<Stock> subList) {
-		this(original.getSymbol());
-		this.name = original.name;
-		this.date = original.date;
-		this.volume = original.volume;
-		setStocks(subList);
+	public Stocks(String symbol, String name) {
+		this.symbol = symbol;
+		this.name = name;
 	}
 
 	public String getSymbol() {
@@ -84,7 +81,17 @@ public class Stocks {
 	}
 
 	public String getFileName() {
+		if (getSymbol().startsWith("^")) {
+			return getSymbol() + ".csf";
+		}
 		return "_" + getSymbol() + ".csf";
+	}
+
+	public String getS() {
+		if (getSymbol().startsWith("^")) {
+			return getSymbol();
+		}
+		return getSymbol() + ".AX";
 	}
 
 	public File getNameMappingFile() {
@@ -144,4 +151,5 @@ public class Stocks {
 		stockss.add(stock);
 		setStocks(stockss);
 	}
+
 }

@@ -123,9 +123,9 @@ public class AverageCanvas extends Canvas {
 					if (stopAt != null)
 						stopAt = stopAt.succ;
 					for (Stock stock = beginAt; stock != stopAt; stock = stock.succ) {
-						float absZinsen = stock.close / buy.close;
+						double absZinsen = stock.close / buy.close;
 						if (absZinsen >= averageConfig.below && absZinsen <= averageConfig.above) {
-							float fy = ((absZinsen - averageConfig.below) * factorY);
+							double fy = ((absZinsen - averageConfig.below) * factorY);
 							int y = (int) fy;
 							chart[stockX][y] += weight;
 							chartCount[stockX][y]++;

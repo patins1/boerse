@@ -27,7 +27,7 @@ public class Gain implements ITaggedValues {
 
 	public int summarizeSize;
 
-	public float success;
+	public double success;
 
 	public Gain(Object desc, Stocks stocks, Stock buyStock) {
 		this.desc = desc;

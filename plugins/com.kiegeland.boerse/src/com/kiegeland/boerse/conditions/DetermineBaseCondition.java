@@ -8,7 +8,7 @@ import com.kiegeland.boerse.domain.Stock;
 public class DetermineBaseCondition extends Condition {
 
 	@Override
-	public float success(Stock buy, Stock base) {
+	public double success(Stock buy, Stock base) {
 		return 0;
 	}
 

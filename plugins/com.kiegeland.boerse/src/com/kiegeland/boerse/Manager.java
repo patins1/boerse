@@ -37,7 +37,7 @@ public class Manager {
 
 	public static int BaseDays = 7;
 
-	public static float Ascendent = (float) 1.02;
+	public static double Ascendent = 1.02;
 
 	public static boolean UseDate = true;
 
@@ -108,7 +108,7 @@ public class Manager {
 			if (invalidDate(buy)) {
 				continue;
 			}
-			float success = Condition.getGain(buy);
+			double success = Condition.getGain(buy);
 			if (success == 0)
 				continue;
 			Gain gain = new Gain(buy.date, aStock, buy);
@@ -318,6 +318,25 @@ public class Manager {
 		// result.add(new MetaData(symbol,Integer.parseInt(vol)));
 		// }
 		// }
+
+		result.add(new Stocks("^AXGD", "S&P/ASX All Ordinaries Gold Index"));
+		result.add(new Stocks("^AXPJ", "S&P/ASX 200 A-REIT Index"));
+		result.add(new Stocks("^AXDJ", "S&P/ASX 200 Consumer Discretionary Index"));
+		result.add(new Stocks("^AXSJ", "S&P/ASX 200 Consumer Staples Index"));
+		result.add(new Stocks("^AXEJ", "S&P/ASX 200 Energy Index"));
+		result.add(new Stocks("^AXFJ", "S&P/ASX 200 Financial Index"));
+		result.add(new Stocks("^AXXJ", "S&P/ASX 200 Financials excluding A-REITs Index"));
+		result.add(new Stocks("^AXHJ", "S&P/ASX 200 Health Care Index"));
+		result.add(new Stocks("^AXNJ", "S&P/ASX 200 Industrials Index"));
+		result.add(new Stocks("^AXIJ", "S&P/ASX 200 Information Technology Index"));
+		result.add(new Stocks("^AXMJ", "S&P/ASX 200 Materials Index"));
+		result.add(new Stocks("^AXMM", "S&P/ASX 300 Metals and Mining Index"));
+		result.add(new Stocks("^AXJR", "S&P/ASX 200 Resources"));
+		result.add(new Stocks("^AXTJ", "S&P/ASX 200 Telecommunications Services Index"));
+		result.add(new Stocks("^AXUJ", "S&P/ASX 200 Utilities Index"));
+		result.add(new Stocks("^AXBAJ", "S&P/ASX 200 Bank Index"));
+
+		result.add(new Stocks("^ATLI", "ASX20"));
 		return result;
 	}
 
@@ -338,12 +357,24 @@ public class Manager {
 					contentMetadata = new StringBufferInputStream(kurseString);
 				}
 				Collection<Stocks> symbols = extractSymbols(contentMetadata);
+				// for (File kursFile : new File(marktDir).listFiles()) {
+				// if (kursFile.getName().indexOf(".") == -1) {
+				// continue;
+				// }
+				// String symbol = kursFile.getName().substring(0, kursFile.getName().indexOf("."));
+				// if (kursFile.getName().startsWith("_")) {
+				// symbol = symbol.substring(1) + ".AX";
+				// } else if (kursFile.getName().startsWith("^")) {
+				// symbol = symbol;
+				// } else {
+				// continue;
+				// }
 				for (Stocks symbol : symbols) {
 					File kursFile = new File(marktDir + "/" + symbol.getFileName());
 					if (kursFile.exists()) {
 						// "http://ichart.yahoo.com/table.csv?s=IFX.DE&d=11&e=31&f=2008&g=d&a=2&b=14&c=2000&ignore=.csv
 						try {
-							// String kursString = Utilities.downloadURL("http://ichart.yahoo.com/table.csv?s=" + symbol.getSymbol() + ".AX&d=12&e=09&f=2016&g=d&a=0&b=01&c=1980&ignore=.csv");
+							// String kursString = Utilities.downloadURL("http://ichart.yahoo.com/table.csv?s=" + symbol.getS() + "&d=12&e=09&f=2016&g=d&a=0&b=01&c=1980&ignore=.csv");
 							// Utilities.toFile(kursFile, kursString);
 						} catch (Exception e) {
 							// System.err.println(symbol.getGroup() + " " + e.getMessage());

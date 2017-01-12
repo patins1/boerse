@@ -8,7 +8,7 @@ import com.kiegeland.boerse.domain.Stock;
 
 abstract public class Condition {
 
-	abstract public float success(Stock buy, Stock base);
+	abstract public double success(Stock buy, Stock base);
 
 	public int getVariableRange() {
 		return 100; // 1=0.001
@@ -24,7 +24,7 @@ abstract public class Condition {
 		return success(buy, base) >= 1;
 	}
 
-	static public float getGain(Stock buy) {
+	static public double getGain(Stock buy) {
 		// condition: open/close conditions
 		// if (true) {
 		// if (buy.close < buy.getOpen())

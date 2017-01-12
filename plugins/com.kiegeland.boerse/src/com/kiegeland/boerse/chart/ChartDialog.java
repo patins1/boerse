@@ -3,12 +3,18 @@
  */
 package com.kiegeland.boerse.chart;
 
+import static com.kiegeland.boerse.util.Utilities.getLatestStock;
+import static com.kiegeland.boerse.util.Utilities.getOldestStock;
+
 import java.awt.Desktop;
 import java.io.File;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.eclipse.jface.dialogs.Dialog;
@@ -28,6 +34,7 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 
+import com.kiegeland.boerse.Manager;
 import com.kiegeland.boerse.domain.Stock;
 import com.kiegeland.boerse.domain.Stocks;
 import com.kiegeland.boerse.util.Utilities;
@@ -52,7 +59,7 @@ public class ChartDialog extends Dialog {
 
 	private int orioffset;
 
-	public Stocks istocks;
+	public List<Stock> istocks;
 
 	private Button depthButton;
 
@@ -71,6 +78,8 @@ public class ChartDialog extends Dialog {
 	private Button rsiButton;
 	private Button fastSTOButton;
 	private Button normalizedButton;
+
+	private Button relativeButton;
 
 	public ChartDialog() {
 		super(PlatformUI.getWorkbench().getDisplay().getActiveShell());
@@ -130,6 +139,7 @@ public class ChartDialog extends Dialog {
 		}
 
 		return result;
+
 	}
 
 	private void processZoom(Integer count, Integer x) {
@@ -147,14 +157,11 @@ public class ChartDialog extends Dialog {
 				if (intradayButton != null && intradayButton.getSelection()) {
 					if (istocks == null) {
 						int samesame = 0;
-						istocks = new Stocks(stocks.getSymbol());
-						istocks.setName(stocks.getName());
-						istocks.setGroup(stocks.getGroup());
 						List<Stock> sss = new ArrayList<Stock>();
 						File dir = new File("C:\\kurse\\snapshots");
 						Stock lastistock = null;
 						for (String file : dir.list()) {
-							if (file.startsWith(istocks.getSymbol() + " ")) {
+							if (file.startsWith(stocks.getSymbol() + " ")) {
 								Date date = null;
 								if (file.contains("PM."))
 									date = Stock.dateFormat4.parse(file.substring(file.indexOf(" ") + 1));
@@ -167,7 +174,7 @@ public class ChartDialog extends Dialog {
 									continue;
 								}
 								String text = Utilities.fromFile(new File(dir, file));
-								Stock istock = parseStock(istocks, text, date);
+								Stock istock = parseStock(text, date);
 								if (istock == null) {
 									continue;
 								}
@@ -188,17 +195,28 @@ public class ChartDialog extends Dialog {
 								lastistock = istock;
 							}
 						}
-						istocks.setStocks(sss);
+						istocks = sss;
 						System.out.println("samesame:" + samesame);
 					}
 
 					canvas.setVisible(istocks.size() != 0);
 					if (canvas.isVisible()) {
-						boersenChart = new BoersenChart(calcCutout(istocks), istocks.getLatestStock(), istocks.asList());
+						boersenChart = new BoersenChart(calcCutout(istocks), getLatestStock(istocks), istocks, calcCutout(istocks), stocks);
 					}
 				} else {
 					canvas.setVisible(true);
-					boersenChart = new BoersenChart(calcCutout(stocks), stock, stocks.asList());
+					List<Stock> astocks = stocks.asList();
+					if (relativeButton.getSelection()) {
+						if (stocks.getGroup() != null) {
+							for (Stocks groupstocks : Manager.maerkte.get(0).getStocks()) {
+								if ("Banks".equals(stocks.getGroup()) && groupstocks.getName().contains("Bank")) {
+									// if (groupstocks.getName().contains(stocks.getGroup())) {
+									astocks = relativate(groupstocks, getOldestStock(calcCutout(astocks)));
+								}
+							}
+						}
+					}
+					boersenChart = new BoersenChart(calcCutout(astocks), stock, astocks, calcCutout(stocks.asList()), stocks);
 				}
 
 				if (boersenChart != null) {
@@ -222,22 +240,100 @@ public class ChartDialog extends Dialog {
 		}
 	}
 
-	public Stocks calcCutout(Stocks original) {
+	private List<Stock> relativate(Stocks groupstocks, Stock equalizer) {
+		Stocks astocks;
+		List<Stock> ss = new ArrayList<Stock>();
+		Stock prevstock = null;
+		Stock prevgroupstock = null;
+		Stock prevrelstock = null;
 
-		int toIndex = Math.min(original.size() - offset, original.size());
+		Map<Date, Stock> stockByDate = new HashMap<Date, Stock>();
+		for (Stock stock : groupstocks.getStocks()) {
+			stockByDate.put(stock.date, stock);
+		}
+
+		double measuredDifference = 0;
+		for (Stock stock : stocks.getStocks()) {
+			boolean measureDifference = stock == equalizer;
+			Stock groupstock = stockByDate.get(stock.date);
+			stock = stock.log();
+			if (groupstock != null) {
+				groupstock = groupstock.log();
+			}
+			if (prevstock != null && prevgroupstock != null) {
+				if (prevrelstock == null) {
+					prevrelstock = prevstock;
+				}
+				if (groupstock == null) {
+					groupstock = prevgroupstock;
+				}
+				Stock relStock = new Stock(null);
+				relStock.close = incr(prevrelstock.close, prevstock.close, stock.close, prevgroupstock.close, groupstock.close);
+				relStock.high = incr(prevrelstock.high, prevstock.high, stock.high, prevgroupstock.high, groupstock.high);
+				relStock.low = incr(prevrelstock.low, prevstock.low, stock.low, prevgroupstock.low, groupstock.low);
+				relStock.open = incr(prevrelstock.open, prevstock.open, stock.open, prevgroupstock.open, groupstock.open);
+				relStock.adjClose = incr(prevrelstock.adjClose, prevstock.adjClose, stock.adjClose, prevgroupstock.adjClose, groupstock.adjClose);
+				relStock.volume = (long) incr(stock.volume, prevstock.volume, stock.volume, prevgroupstock.volume, groupstock.volume);
+				relStock.date = stock.date;
+				ss.add(relStock);
+
+				prevgroupstock = groupstock;
+				prevstock = stock;
+				prevrelstock = relStock;
+				if (measureDifference) {
+					measuredDifference = stock.close - relStock.close;
+				}
+			} else {
+				ss.add(stock);
+				prevstock = stock;
+				prevgroupstock = groupstock;
+			}
+		}
+		List<Stock> sss = new ArrayList<Stock>();
+		for (Stock relStock : ss) {
+			relStock.close += measuredDifference;
+			relStock.high += measuredDifference;
+			relStock.low += measuredDifference;
+			relStock.open += measuredDifference;
+			relStock.adjClose += measuredDifference;
+			sss.add(relStock.exp());
+		}
+
+		return sss;
+	}
+
+	private double incr(double close, double percent) {
+		return close * (1 + percent);
+	}
+
+	private double incr(double close, double closeOld1, double closeNew1, double closeOld2, double closeNew2) {
+		return close + (closeNew1 - closeOld1) - (closeNew2 - closeOld2);
+		// return Math.exp(Math.log(close) + Math.log(closeNew1) - Math.log(closeOld1) - (Math.log(closeNew2) - Math.log(closeOld2)));
+
+		// return close * (1 + perc(closeOld1, closeNew1) - perc(closeOld2, closeNew2));
+		// return close * (1 + perc(closeOld1, closeNew1) - perc(closeOld2, closeNew2));
+	}
+
+	private double perc(double closeOld, double closeNew) {
+		return (closeNew - closeOld) / closeOld;
+	}
+
+	public List<Stock> calcCutout(List<Stock> istocks2) {
+
+		int toIndex = Math.min(istocks2.size() - offset, istocks2.size());
 		if (toIndex - range < 0) {
 			offset = Math.max(0, offset + (toIndex - range));
-			toIndex = Math.min(original.size() - offset, original.size());
+			toIndex = Math.min(istocks2.size() - offset, istocks2.size());
 		}
 		int fromIndex = toIndex - range;
 		if (fromIndex < 0) {
 			range = Math.max(1, range + fromIndex);
 			fromIndex = Math.max(0, toIndex - range);
 		}
-		List<Stock> subList = original.subList(fromIndex, toIndex);
+		List<Stock> subList = istocks2.subList(fromIndex, toIndex);
 		// while (subList.size() >= 128)
 		// subList = halve(subList);
-		return new Stocks(original, subList);
+		return subList;
 	}
 
 	private List<Stock> halve(List<Stock> subList) {
@@ -251,10 +347,10 @@ public class ChartDialog extends Dialog {
 		return result;
 	}
 
-	public static Stock parseStock(Stocks istocks, String text, Date date) {
-		Stock istock = new Stock(istocks);
+	public static Stock parseStock(String text, Date date) {
+		Stock istock = new Stock(null);
 		istock.setDate(date);
-		float last = findCol("Last_field\" autocomplete=\"off\">", "<", text);
+		double last = findCol("Last_field\" autocomplete=\"off\">", "<", text);
 
 		istock.setHigh(findCol("Offer", text));
 		istock.setLow(findCol("Bid", text));
@@ -262,36 +358,36 @@ public class ChartDialog extends Dialog {
 		istock.setClose(last);
 
 		istock.setVolume(Math.round(findCol("lblVolume_field\" autocomplete=\"off\">", "<", text)));
-		istock.setBuyers(Math.round(findCol("buyers for ", " units", text)));
-		istock.setSellers(Math.round(findCol("sellers for ", " units", text)));
-		istock.setBuyersPeople(Math.round(findCol("TotalBuyersForUnits\":\"", " buyers for", text)));
-		istock.setSellersPeople(Math.round(findCol("TotalSellersForUnits\":\"", " sellers for", text)));
+		istock.setBuyers((int) findCol("buyers for ", " units", text));
+		istock.setSellers((int) findCol("sellers for ", " units", text));
+		istock.setBuyersPeople((int) findCol("TotalBuyersForUnits\":\"", " buyers for", text));
+		istock.setSellersPeople((int) findCol("TotalSellersForUnits\":\"", " sellers for", text));
 		if (last == 0) {
 			return null;
 		}
 		int pos = 0;
 		for (String atext : text.split(Pattern.quote("},{"))) {
-			float bn = findCol("Bn\":\"", "\"", atext);
+			double bn = findCol("Bn\":\"", "\"", atext);
 			if (bn == 0)
 				continue;
-			istock.addBuyer(Math.round(findCol("Bq\":\"", "\"", atext)), findCol("Bp\":\"", "\"", atext), Math.round(findCol("Sq\":\"", "\"", atext)), findCol("Sp\":\"", "\"", atext), pos);
+			istock.addBuyer((int) findCol("Bq\":\"", "\"", atext), findCol("Bp\":\"", "\"", atext), (int) findCol("Sq\":\"", "\"", atext), findCol("Sp\":\"", "\"", atext), pos);
 			pos = pos + 1;
 		}
 
 		return istock;
 	}
 
-	private static float findCol(String str, String text) {
+	private static double findCol(String str, String text) {
 		return findCol(str + "_Quote_field\" autocomplete=\"off\">", "<", text);
 	}
 
-	private static float findCol(String str, String end, String text) {
+	private static double findCol(String str, String end, String text) {
 		int index = text.indexOf(str);
 		if (index != -1) {
 			index += str.length();
 			String s = text.substring(index, text.indexOf(end, index));
 			s = s.replace(",", "");
-			return Float.parseFloat(s);
+			return Double.parseDouble(s);
 		}
 		return 0;
 	}
@@ -312,6 +408,7 @@ public class ChartDialog extends Dialog {
 		rsiButton = createCheck(parent, 34, "RSI", false);
 		fastSTOButton = createCheck(parent, 35, "Fast STO", false);
 		normalizedButton = createCheck(parent, 36, "Norm. Vol.", false);
+		relativeButton = createCheck(parent, 37, "Relative", false);
 		createButton(parent, 26, "Update", false);
 		createButton(parent, 24, "Yahoo", false);
 		enabledButtons();
@@ -350,7 +447,8 @@ public class ChartDialog extends Dialog {
 			range = 32;
 		} else if (buttonId == 24) {
 			try {
-				URI uri = new URI("https://au.finance.yahoo.com/echarts?s=" + stocks.getSymbol() + ".AX#symbol=" + stocks.getSymbol() + ".AX;range=5d");
+				String symb = URLEncoder.encode(stocks.getS());
+				URI uri = new URI("https://au.finance.yahoo.com/echarts?s=" + symb + "#symbol=" + symb + ";range=5d");
 				Desktop desktop = Desktop.getDesktop();
 				desktop.browse(uri);
 				return;

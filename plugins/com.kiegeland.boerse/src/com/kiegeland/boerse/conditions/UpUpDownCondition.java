@@ -8,7 +8,7 @@ import com.kiegeland.boerse.domain.Stock;
 
 public class UpUpDownCondition extends Condition {
 
-	public float success(Stock buy, Stock base) {
+	public double success(Stock buy, Stock base) {
 		return buy.close / base.close;
 	}
 

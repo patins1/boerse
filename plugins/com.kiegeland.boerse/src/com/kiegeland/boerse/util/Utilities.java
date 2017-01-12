@@ -16,6 +16,9 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.List;
+
+import com.kiegeland.boerse.domain.Stock;
 
 public class Utilities {
 
@@ -109,7 +112,7 @@ public class Utilities {
 	}
 
 	static public String printPercentage(double success2) {
-		return "" + String.format( "%+.2f", success2 * 100) + "%";
+		return "" + String.format("%+.2f", success2 * 100) + "%";
 	}
 
 	static byte[] toByteArray(String hex) {
@@ -124,6 +127,14 @@ public class Utilities {
 
 	public static void main(String[] args) throws IOException {
 		toFile(new File("c:/BlackImp.reg"), new String(toByteArray("52454745444954340D0A0D0A5B484B45595F43555252454E545F555345525C536F6674776172655C41535061636B5D0D0A224B6579223D2230764B69524E6C3636754B7838736F743")));
+	}
+
+	public static Stock getOldestStock(List<Stock> stocks) {
+		return stocks.get(0);
+	}
+
+	public static Stock getLatestStock(List<Stock> stocks) {
+		return stocks.get(stocks.size() - 1);
 	}
 
 }

@@ -111,7 +111,7 @@ public class AllStockGainsView extends ViewPart {
 				// int result = o1.summarizeSize - o2.summarizeSize;
 				// if (result != 0)
 				// return result;
-				float success = o1.success - o2.success;
+				double success = o1.success - o2.success;
 				if (success != 0)
 					return success < 0 ? -1 : 1;
 				return o2.stocks.getStockName().compareTo(o1.stocks.getStockName());

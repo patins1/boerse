@@ -3,6 +3,9 @@
  */
 package com.kiegeland.boerse.chart;
 
+import static com.kiegeland.boerse.util.Utilities.getLatestStock;
+import static com.kiegeland.boerse.util.Utilities.getOldestStock;
+
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,6 +43,7 @@ import org.eclipse.birt.chart.model.data.SeriesDefinition;
 import org.eclipse.birt.chart.model.data.StockDataSet;
 import org.eclipse.birt.chart.model.data.impl.DateTimeDataSetImpl;
 import org.eclipse.birt.chart.model.data.impl.DifferenceDataSetImpl;
+import org.eclipse.birt.chart.model.data.impl.NumberDataElementImpl;
 import org.eclipse.birt.chart.model.data.impl.NumberDataSetImpl;
 import org.eclipse.birt.chart.model.data.impl.SeriesDefinitionImpl;
 import org.eclipse.birt.chart.model.data.impl.StockDataSetImpl;
@@ -59,7 +63,7 @@ import com.kiegeland.boerse.domain.Stocks;
 
 public class BoersenChart {
 
-	private Stocks aStocks;
+	private List<Stock> aStocks;
 	private Stock baseStock;
 
 	public boolean intraday = false;
@@ -75,30 +79,34 @@ public class BoersenChart {
 
 	private List<Stock> allstocks;
 	double totalProfit = 0;
+	private List<Stock> aStocksMinMax;
+	private Stocks original;
 
-	public BoersenChart(Stocks aStocks, Stock baseStock, List<Stock> allstocks) {
+	public BoersenChart(List<Stock> aStocks, Stock baseStock, List<Stock> allstocks, List<Stock> aStocksMinMax, Stocks original) {
 		this.aStocks = aStocks;
 		this.baseStock = baseStock;
 		this.allstocks = allstocks;
+		this.aStocksMinMax = aStocksMinMax;
+		this.original = original;
 	}
 
 	public final Chart createCFStockChart() throws ParseException {
 
 		Map<Stock, Integer> indexes = getIndexes();
 
-		// if (showNormalized) {
-		// int firstVisible = indexes.get(aStocks.getOldestStock());
-		// int lastVisible = indexes.get(aStocks.getLatestStock()) + 1;
-		// List<Stock> theStocks = normalizeVolumes(aStocks.asList());
-		// int preHundert = Math.max(0, firstVisible - 100);
-		// List<Stock> theNewAllStocks = normalizeVolumes(allstocks.subList(0, preHundert));
-		// theNewAllStocks.addAll(normalizeVolumes(allstocks.subList(preHundert, firstVisible)));
-		// theNewAllStocks.addAll(theStocks);
-		// theNewAllStocks.addAll(normalizeVolumes(allstocks.subList(lastVisible, allstocks.size())));
-		// allstocks = theNewAllStocks;
-		// aStocks = new Stocks(aStocks, theStocks);
-		// indexes = getIndexes();
-		// }
+		if (showNormalized) {
+			int firstVisible = indexes.get(getOldestStock(aStocks));
+			int lastVisible = indexes.get(getLatestStock(aStocks)) + 1;
+			List<Stock> theStocks = normalizeVolumes(aStocks);
+			int preHundert = Math.max(0, firstVisible - 100);
+			List<Stock> theNewAllStocks = normalizeVolumes(allstocks.subList(0, preHundert));
+			theNewAllStocks.addAll(normalizeVolumes(allstocks.subList(preHundert, firstVisible)));
+			theNewAllStocks.addAll(theStocks);
+			theNewAllStocks.addAll(normalizeVolumes(allstocks.subList(lastVisible, allstocks.size())));
+			allstocks = theNewAllStocks;
+			aStocks = theStocks;
+			indexes = getIndexes();
+		}
 
 		List<Crazy> craziest = new ArrayList<Crazy>();
 		craziest.add(new Crazy("A2M", 1.7050, 1.7750, "2016-01-27", "2016-02-16"));
@@ -117,7 +125,7 @@ public class BoersenChart {
 		// Title
 		cwaStock.getTitle().getLabel().getCaption().getFont().setName("Arial");// $NON-NLS-1$
 		cwaStock.getTitle().getLabel().getCaption().getFont().setItalic(true);// $NON-NLS-1$
-		cwaStock.getTitle().getLabel().getCaption().setValue(baseStock != null ? baseStock.toString() : aStocks.getSymbol());// $NON-NLS-1$
+		cwaStock.getTitle().getLabel().getCaption().setValue(baseStock != null ? baseStock.toString() : original.getSymbol());// $NON-NLS-1$
 		TitleBlock tb = cwaStock.getTitle();
 		tb.setBackground(GradientImpl.create(ColorDefinitionImpl.create(0, 128, 0), ColorDefinitionImpl.create(128, 0, 0), 0, false));
 		tb.getLabel().getCaption().setColor(ColorDefinitionImpl.WHITE());
@@ -182,7 +190,7 @@ public class BoersenChart {
 		double maxSellers = Double.MIN_VALUE;
 		double minBuyers = Double.MAX_VALUE;
 		double maxBuyers = Double.MIN_VALUE;
-		for (Stock stock : aStocks.getStocks()) {
+		for (Stock stock : aStocks) {
 			min = Math.min(stock.getLow(), min);
 			max = Math.max(stock.getHigh(), max);
 			minVolumn = Math.min(stock.volume, minVolumn);
@@ -204,7 +212,7 @@ public class BoersenChart {
 		List<Double> sells = new ArrayList<Double>();
 
 		Stock last = null;
-		for (Stock stock : aStocks.getStocks()) {
+		for (Stock stock : aStocks) {
 			if (last != null) {
 				// int buy = (stock.getBuyers() - last.getBuyers()) * (stock.getBuyersPeople() - last.getBuyersPeople());
 				// int sell = (stock.getSellers() - last.getSellers()) * (stock.getSellersPeople() - last.getSellersPeople());
@@ -241,7 +249,7 @@ public class BoersenChart {
 		List<Double> volumns = new ArrayList<Double>();
 		List<CDateTime> dates = new ArrayList<CDateTime>();
 		List<StockEntry> stockEntries = new ArrayList<StockEntry>();
-		for (Stock stock : aStocks.getStocks()) {
+		for (Stock stock : aStocks) {
 			StockEntry entry = new StockEntry(stock.getOpen(), stock.getLow(), stock.getHigh(), stock.getClose());
 			stockEntries.add(entry);
 			dates.add(new CDateTime(stock.date));
@@ -255,25 +263,25 @@ public class BoersenChart {
 		List<DifferenceDataSet> differenceDataSets = new ArrayList<DifferenceDataSet>();
 
 		int totalStockCount = 720 * 1000000;
-		if (aStocks.getSymbol().contentEquals("BHP"))
+		if (original.getSymbol().contentEquals("BHP"))
 			totalStockCount = 5323 * 1000000;
-		if (aStocks.getSymbol().contentEquals("BAL"))
+		if (original.getSymbol().contentEquals("BAL"))
 			totalStockCount = 96 * 1000000;
-		if (aStocks.getSymbol().contentEquals("BKL"))
+		if (original.getSymbol().contentEquals("BKL"))
 			totalStockCount = 17 * 1000000;
 
 		boolean showAvgPurchaseCost = !true;
 		if (showAvgPurchaseCost) {
 			final List<DifferenceEntry> sea = new ArrayList<DifferenceEntry>();
-			float weightedValue = aStocks.getOldestStock().getOpen();
-			float summedValue = 0;
-			float summedVolumne = 0;
-			for (Stock stock : aStocks.getStocks()) {
+			double weightedValue = getOldestStock(aStocks).getOpen();
+			double summedValue = 0;
+			double summedVolumne = 0;
+			for (Stock stock : aStocks) {
 				weightedValue = stock.close * stock.getVolume() / totalStockCount + weightedValue * (totalStockCount - stock.getVolume()) / totalStockCount;
 
 				summedValue += stock.close * stock.getVolume();
 				summedVolumne += stock.getVolume();
-				float weighted = (summedValue / summedVolumne) * summedVolumne / totalStockCount + aStocks.getOldestStock().getOpen() * (totalStockCount - summedVolumne) / totalStockCount;
+				double weighted = (summedValue / summedVolumne) * summedVolumne / totalStockCount + getOldestStock(aStocks).getOpen() * (totalStockCount - summedVolumne) / totalStockCount;
 
 				sea.add(new DifferenceEntry(weighted, weightedValue));
 			}
@@ -283,49 +291,53 @@ public class BoersenChart {
 		boolean showOvernightAndDuringdayInceases = !true;
 		if (showOvernightAndDuringdayInceases) {
 
-			double aa = aStocks.getOldestStock().close;
+			double aa = getOldestStock(aStocks).close;
 			List<Double> amplified = new ArrayList<Double>();
-			for (Stock stock : aStocks.getStocks()) {
-				if (stock.pred() == null) {
+			Stock pred = null;
+			for (Stock stock : aStocks) {
+				if (pred == null) {
 					amplified.add(aa);
 					continue;
 				}
 				// double a = (stock.close - stock.open) * stock.volume;
 				// double a = (stock.close - stock.open);
 				long vol = stock.getVolume();
-				// if (stock.date.getDay() == stock.pred().date.getDay()) {
-				// vol = stock.getVolume() - stock.pred().getVolume();
+				// if (stock.date.getDay() == pred.date.getDay()) {
+				// vol = stock.getVolume() - pred.getVolume();
 				// }
 				// double a = (stock.close - stock.open);
-				// double a = (stock.open - stock.pred().close) - (stock.close - stock.open);
-				double a = (stock.open - stock.pred().close);
-				// double a = (stock.close - stock.pred().close) * vol;
+				// double a = (stock.open - pred.close) - (stock.close - stock.open);
+				double a = (stock.open - pred.close);
+				// double a = (stock.close - pred.close) * vol;
 				aa += a;
 				// aa = stock.close * vol;
 				amplified.add(aa);
+				pred = stock;
 
 			}
 
-			aa = aStocks.getOldestStock().close;
+			aa = getOldestStock(aStocks).close;
 			List<Double> amplified2 = new ArrayList<Double>();
-			for (Stock stock : aStocks.getStocks()) {
-				if (stock.pred() == null) {
+			pred = null;
+			for (Stock stock : aStocks) {
+				if (pred == null) {
 					amplified2.add(aa);
 					continue;
 				}
 				// double a = (stock.close - stock.open) * stock.volume;
 				// double a = (stock.close - stock.open);
 				long vol = stock.getVolume();
-				// if (stock.date.getDay() == stock.pred().date.getDay()) {
-				// vol = stock.getVolume() - stock.pred().getVolume();
+				// if (stock.date.getDay() == pred.date.getDay()) {
+				// vol = stock.getVolume() - pred.getVolume();
 				// }
 				double a = (stock.close - stock.open);
-				// double a = (stock.open - stock.pred().close) - (stock.close - stock.open);
-				// double a = (stock.open - stock.pred().close);
-				// double a = (stock.close - stock.pred().close) * vol;
+				// double a = (stock.open - pred.close) - (stock.close - stock.open);
+				// double a = (stock.open - pred.close);
+				// double a = (stock.close - pred.close) * vol;
 				aa += a;
 				// aa = stock.close * vol;
 				amplified2.add(aa);
+				pred = stock;
 
 			}
 
@@ -349,34 +361,36 @@ public class BoersenChart {
 		boolean showNoFriday = !true;
 		if (showNoFriday) {
 
-			double aa = aStocks.getOldestStock().close;
-			List<Float> amplified = new ArrayList<Float>();
-			for (Stock stock : aStocks.getStocks()) {
-				if (stock.pred() == null) {
-					amplified.add((float) aa);
+			double aa = getOldestStock(aStocks).close;
+			List<Double> amplified = new ArrayList<Double>();
+			Stock pred = null;
+			for (Stock stock : aStocks) {
+				if (pred == null) {
+					amplified.add(aa);
 					continue;
 				}
 				// double a = (stock.close - stock.open) * stock.volume;
 				// double a = (stock.close - stock.open);
 				long vol = stock.getVolume();
-				// if (stock.date.getDay() == stock.pred().date.getDay()) {
-				// vol = stock.getVolume() - stock.pred().getVolume();
+				// if (stock.date.getDay() == pred.date.getDay()) {
+				// vol = stock.getVolume() - pred.getVolume();
 				// }
 				// double a = (stock.close - stock.open);
-				// double a = (stock.open - stock.pred().close) * stock.volume;
-				double a = (stock.close - stock.pred().close);
+				// double a = (stock.open - pred.close) * stock.volume;
+				double a = (stock.close - pred.close);
 				if (stock.date.getDay() == 5)
 					a = 0;
 				aa += a;
 				// aa = stock.close * vol;
-				amplified.add((float) aa);
+				amplified.add((double) aa);
+				pred = stock;
 			}
 
 			double minAmplified = Collections.min(amplified);
 			double maxAmplified = Collections.max(amplified);
 
 			final List<DifferenceEntry> sea = new ArrayList<DifferenceEntry>();
-			for (float f : amplified) {
+			for (double f : amplified) {
 				sea.add(new DifferenceEntry((f - minAmplified) / (maxAmplified - minAmplified) * (max - min) + min, 0 * (0 - minAmplified) / (maxAmplified - minAmplified) * (max - min) + min));
 			}
 			differenceDataSets.add(DifferenceDataSetImpl.create(sea.toArray(new DifferenceEntry[] {})));
@@ -386,7 +400,7 @@ public class BoersenChart {
 			final List<DifferenceEntry> sea = new ArrayList<DifferenceEntry>();
 			final List<DifferenceEntry> seaPeople = new ArrayList<DifferenceEntry>();
 			int i = 0;
-			for (Stock stock : aStocks.getStocks()) {
+			for (Stock stock : aStocks) {
 				double max2 = Math.max(maxSellers, maxBuyers);
 				double adj = 1;
 				adj = max2 / Math.max(stock.getSellers(), stock.getBuyers());
@@ -402,21 +416,23 @@ public class BoersenChart {
 		}
 
 		totalProfit = 0;
-		List<Double> closes = allstocks.stream().map(x -> (double) x.close).collect(Collectors.toList());
+		List<Double> closes = allstocks.stream().map(x -> x.close).collect(Collectors.toList());
 
 		String addMessage = "";
 		if (showMACD) {
 			final List<DifferenceEntry> sea = new ArrayList<DifferenceEntry>();
 
-			List<Double> period12 = ema(closes, 12);
-			List<Double> period26 = ema(closes, 26);
+			int ema12 = 12;
+			int ema26 = 26;
+			List<Double> period12 = ema(closes, ema12);
+			List<Double> period26 = ema(closes, ema26);
 			List<Double> macdList = subtract(period12, period26);
 			List<Double> signalList = ema(macdList, 9);
 			double minMACD = Double.MAX_VALUE;
 			double maxMACD = Double.MIN_VALUE;
 			double maxHistogram = Double.MIN_VALUE;
 			// for (double macd : macdList) {
-			for (Stock stock : aStocks.getStocks()) {
+			for (Stock stock : aStocks) {
 				int ind = indexes.get(stock);
 				double macd = macdList.get(ind);
 				double signal = signalList.get(ind);
@@ -425,26 +441,26 @@ public class BoersenChart {
 				maxHistogram = Math.max(Math.abs(macd - signal), maxHistogram);
 			}
 			double minHistogram = -maxHistogram;
-			Float boughtAt = null;
+			Double boughtAt = null;
 			int count = 0;
 			List<DifferenceEntry> profit = new ArrayList<DifferenceEntry>();
 			boolean showHistogram = false;
-			for (Stock stock : aStocks.getStocks()) {
+			for (Stock stock : aStocks) {
 				int ind = indexes.get(stock);
 				double macd = macdList.get(ind);
 				double signal = signalList.get(ind);
-				boolean useDetailedNormalizedVolumns = showNormalized;
-				if (useDetailedNormalizedVolumns) {
-					List<Stock> detailed_stocks = allstocks.subList(Math.max(0, ind - 250), ind + 1);
-					detailed_stocks = normalizeVolumes(detailed_stocks);
-					List<Double> detailed_closes = detailed_stocks.stream().map(x -> (double) x.close).collect(Collectors.toList());
-					List<Double> detailed_period12 = ema(detailed_closes, 12);
-					List<Double> detailed_period26 = ema(detailed_closes, 26);
-					List<Double> detailed_macdList = subtract(detailed_period12, detailed_period26);
-					List<Double> detailed_signalList = ema(detailed_macdList, 9);
-					macd = detailed_macdList.get(detailed_macdList.size() - 1);
-					signal = detailed_signalList.get(detailed_signalList.size() - 1);
-				}
+				// boolean useDetailedNormalizedVolumns = showNormalized;
+				// if (useDetailedNormalizedVolumns) {
+				// List<Stock> detailed_stocks = allstocks.subList(Math.max(0, ind - 250 - ema26), ind + 1);
+				// detailed_stocks = normalizeVolumes(detailed_stocks);
+				// List<Double> detailed_closes = detailed_stocks.stream().map(x -> (double) x.close).collect(Collectors.toList());
+				// List<Double> detailed_period12 = ema(detailed_closes, ema12);
+				// List<Double> detailed_period26 = ema(detailed_closes, ema26);
+				// List<Double> detailed_macdList = subtract(detailed_period12, detailed_period26);
+				// List<Double> detailed_signalList = ema(detailed_macdList, 9);
+				// macd = detailed_macdList.get(detailed_macdList.size() - 1);
+				// signal = detailed_signalList.get(detailed_signalList.size() - 1);
+				// }
 
 				double histogram = macd - signal;
 
@@ -473,16 +489,16 @@ public class BoersenChart {
 			// int best_i12 = 0;
 			// int best_i26 = 0;
 			// int best_emaadd = 0;
-			// for (int emaadd = 0; emaadd < 7; emaadd++) {
-			// for (int i12 = 1; i12 < 30; i12++) {
+			// for (int emaadd = 0; emaadd < 2; emaadd += 1) {
+			// for (int i12 = 1; i12 < 3000; i12 += 50) {
 			// period12 = ema(closes, i12, emaadd);
-			// for (int i26 = i12 + 1; i26 < 40; i26++) {
+			// for (int i26 = i12 + 1; i26 < 4000; i26 += 50) {
 			// period26 = ema(closes, i26, emaadd);
 			// macdList = subtract(period12, period26);
 			// signalList = ema(macdList, 9, emaadd);
 			// double localTotalProfit = 0;
 			// boughtAt = null;
-			// for (Stock stock : aStocks.getStocks()) {
+			// for (Stock stock : aStocks) {
 			// int ind = indexes.get(stock);
 			// double macd = macdList.get(ind);
 			// double signal = signalList.get(ind);
@@ -502,7 +518,7 @@ public class BoersenChart {
 			// boughtAt = stock.close;
 			// }
 			// if (boughtAt != null && (exitNow || stock == aStocks.getLatestStock())) {
-			// localTotalProfit += (stock.close - boughtAt) * (10000 / boughtAt) - 50;
+			// localTotalProfit += (stock.close - boughtAt) * (10000 / boughtAt);
 			// boughtAt = null;
 			// }
 			// }
@@ -542,10 +558,10 @@ public class BoersenChart {
 			double minRSI = 0;
 			double maxRSI = 100;
 
-			Float boughtAt = null;
+			Double boughtAt = null;
 			List<DifferenceEntry> profit = new ArrayList<DifferenceEntry>();
 			int count = 0;
-			for (Stock stock : aStocks.getStocks()) {
+			for (Stock stock : aStocks) {
 				int ind = indexes.get(stock);
 				double rsi = rsiList.get(ind);
 
@@ -566,7 +582,7 @@ public class BoersenChart {
 			double minK = 0;
 			double maxK = 1;
 
-			for (Stock stock : aStocks.getStocks()) {
+			for (Stock stock : aStocks) {
 				int ind = indexes.get(stock);
 				double k = kList.get(ind);
 				double d = dList.get(ind);
@@ -581,15 +597,15 @@ public class BoersenChart {
 			for (double tight : new double[] { 0.05, 0.4, 1.0 }) {
 				final List<DifferenceEntry> sea = new ArrayList<DifferenceEntry>();
 				int i = 0;
-				for (Stock stock : aStocks.getStocks()) {
+				for (Stock stock : aStocks) {
 					int minVolumne = (int) Math.round(Math.min(stock.getSelVolumnes(), stock.getBuyVolumnes()) * tight);
 					if (minVolumne == 0) {
 						break;
 					}
-					// float minPrice = stock.getBuyPriceForVolumne(minVolumne);
-					// float maxPrice = stock.getSellPriceForVolumne(minVolumne);
-					float minPrice = stock.getBuyPriceAtVolumne(minVolumne);
-					float maxPrice = stock.getSellPriceAtVolumne(minVolumne);
+					// double minPrice = stock.getBuyPriceForVolumne(minVolumne);
+					// double maxPrice = stock.getSellPriceForVolumne(minVolumne);
+					double minPrice = stock.getBuyPriceAtVolumne(minVolumne);
+					double maxPrice = stock.getSellPriceAtVolumne(minVolumne);
 					sea.add(new DifferenceEntry(minPrice, maxPrice));
 					// sea.add(new DifferenceEntry((stock.getSellers() - minDemand) / (maxDemand - minDemand) * (max - min) + min, (stock.getBuyers() - minDemand) / (maxDemand - minDemand) * (max - min) + min));
 					// seaPeople.add(new DifferenceEntry((maxDemandPeople - stock.getSellersPeople()) / (maxDemandPeople - minDemandPeople) * (max - min) + min, (stock.getBuyersPeople() - minDemandPeople) / (maxDemandPeople - minDemandPeople) * (max - min) + min));
@@ -604,10 +620,10 @@ public class BoersenChart {
 
 		if (showProfit) {
 			for (Crazy crazy : craziest) {
-				if (crazy.getSymbol().equals(aStocks.getSymbol())) {
+				if (crazy.getSymbol().equals(original.getSymbol())) {
 					Stock addedDiff = null;
 					final List<DifferenceEntry> profit = new ArrayList<DifferenceEntry>();
-					for (Stock stock : aStocks.getStocks()) {
+					for (Stock stock : aStocks) {
 
 						if (crazy.within(stock)) {
 							addedDiff = stock;
@@ -616,7 +632,7 @@ public class BoersenChart {
 							else
 								profit.add(new DifferenceEntry(stock.close, crazy.getBuy()));
 						} else {
-							profit.add(new DifferenceEntry(Float.NaN, Float.NaN));
+							profit.add(new DifferenceEntry(Double.NaN, Double.NaN));
 						}
 
 					}
@@ -701,6 +717,9 @@ public class BoersenChart {
 			cwaStock.getTitle().getLabel().getCaption().setValue(cwaStock.getTitle().getLabel().getCaption().getValue() + " Profit: " + Math.round(totalProfit) + "$" + addMessage);
 		}
 
+		yAxisPrimary.getScale().setMax(NumberDataElementImpl.create(aStocksMinMax.stream().map(xx -> xx.high).max(Double::compare).orElse(0.0)));
+		yAxisPrimary.getScale().setMin(NumberDataElementImpl.create(aStocksMinMax.stream().map(xx -> xx.low).min(Double::compare).orElse(0.0)));
+
 		return cwaStock;
 	}
 
@@ -710,7 +729,11 @@ public class BoersenChart {
 		int i = 0;
 		for (double v12 : period12) {
 			double v26 = period26.get(i);
-			double macd = v12 - v26;
+			double macd = (v12 - v26);
+			boolean usePPO = true;
+			if (usePPO) {
+				macd /= v26;
+			}
 			macdList.add(macd);
 			i++;
 		}
@@ -778,27 +801,27 @@ public class BoersenChart {
 		return result;
 	}
 
-	private Float virtualTrade(List<DifferenceDataSet> differenceDataSets, Float boughtAt, int count, List<DifferenceEntry> profit, Stock stock, boolean indicates, boolean exitNow) {
+	private Double virtualTrade(List<DifferenceDataSet> differenceDataSets, Double boughtAt, int count, List<DifferenceEntry> profit, Stock stock, boolean indicates, boolean exitNow) {
 		if (boughtAt == null && indicates) {
 			// boughtAt = (1 * stock.open + 9 * stock.close) / 10;
 			boughtAt = stock.close;
 			// boughtAt = (stock.open + stock.close) / 2;
 			profit.clear();
 			for (int index = 1; index <= count; index++) {
-				profit.add(new DifferenceEntry(Float.NaN, Float.NaN));
+				profit.add(new DifferenceEntry(Double.NaN, Double.NaN));
 			}
 		}
 		if (boughtAt != null) {
 			profit.add(new DifferenceEntry(stock.close, boughtAt));
 		}
-		if (boughtAt != null && (exitNow || stock == aStocks.getLatestStock())) {
-			for (int index = 1; index <= aStocks.getStocks().length - (count + 1); index++) {
-				profit.add(new DifferenceEntry(Float.NaN, Float.NaN));
+		if (boughtAt != null && (exitNow || stock == getLatestStock(aStocks))) {
+			for (int index = 1; index <= aStocks.size() - (count + 1); index++) {
+				profit.add(new DifferenceEntry(Double.NaN, Double.NaN));
 			}
 			if (stock.close < boughtAt || true) {
 				differenceDataSets.add(DifferenceDataSetImpl.create(profit.toArray(new DifferenceEntry[] {})));
+				totalProfit += (stock.close - boughtAt) * (10000 / boughtAt) - 50;
 			}
-			totalProfit += (stock.close - boughtAt) * (10000 / boughtAt) - 50;
 			boughtAt = null;
 		}
 		return boughtAt;

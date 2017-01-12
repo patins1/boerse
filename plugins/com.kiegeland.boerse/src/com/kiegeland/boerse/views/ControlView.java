@@ -3,6 +3,8 @@
  */
 package com.kiegeland.boerse.views;
 
+import static com.kiegeland.boerse.util.Utilities.getLatestStock;
+
 import java.awt.Toolkit;
 import java.io.File;
 import java.util.ArrayList;
@@ -200,7 +202,7 @@ public class ControlView extends ViewPart {
 
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					Manager.Ascendent = (float) (ascSlider.getSelection() / (float) ascScaling);
+					Manager.Ascendent = 1.0 * ascSlider.getSelection() / ascScaling;
 					setAscendText();
 					Manager.ReCalc();
 				}
@@ -281,9 +283,9 @@ public class ControlView extends ViewPart {
 												File file = new File("C:\\kurse\\snapshots\\" + lastStock + " " + Stock.dateFormat3.format(new Date()) + ".html");
 												Utilities.toFile(file, text);
 												System.out.println("Stock stored " + file.toString());
-												if (ChartDialog.current != null && ChartDialog.current.istocks != null && ChartDialog.current.istocks.getSymbol().equals(lastStock)) {
-													Stock stock = ChartDialog.parseStock(ChartDialog.current.istocks, text, new Date());
-													if (stock != null && stock.getClose() != ChartDialog.current.istocks.getLatestStock().getClose() && ChartDialog.current.notifyButton.getSelection()) {
+												if (ChartDialog.current != null && ChartDialog.current.istocks != null && ChartDialog.current.stocks.getSymbol().equals(lastStock)) {
+													Stock stock = ChartDialog.parseStock(text, new Date());
+													if (stock != null && stock.getClose() != getLatestStock(ChartDialog.current.istocks).getClose() && ChartDialog.current.notifyButton.getSelection()) {
 														Toolkit.getDefaultToolkit().beep();
 														Thread.sleep(400);
 														Toolkit.getDefaultToolkit().beep();

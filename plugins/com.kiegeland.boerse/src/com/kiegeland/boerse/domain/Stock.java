@@ -14,15 +14,15 @@ import com.kiegeland.boerse.util.Utilities;
 
 public class Stock implements ITaggedValues {
 
-	public float close;
+	public double close;
 	public Stock succ;
 	public int index;
 	public Stock[] stocks;
 	public Date date;
-	public float open;
-	public float high;
-	public float low;
-	public float adjClose;
+	public double open;
+	public double high;
+	public double low;
+	public double adjClose;
 	public long volume;
 	Stocks aStocks;
 
@@ -38,7 +38,7 @@ public class Stock implements ITaggedValues {
 	private int buyersPeople;
 	private int sellersPeople;
 
-	float[] depths = new float[10 * 4];
+	double[] depths = new double[10 * 4];
 	private int buyVolumnes;
 	private int selVolumnes;
 
@@ -56,42 +56,42 @@ public class Stock implements ITaggedValues {
 	/**
 	 * @return
 	 */
-	public float getHigh() {
+	public double getHigh() {
 		return high;
 	}
 
 	/**
 	 * @param high
 	 */
-	public void setHigh(float high) {
+	public void setHigh(double high) {
 		this.high = high;
 	}
 
 	/**
 	 * @return
 	 */
-	public float getLow() {
+	public double getLow() {
 		return low;
 	}
 
 	/**
 	 * @param low
 	 */
-	public void setLow(float low) {
+	public void setLow(double low) {
 		this.low = low;
 	}
 
 	/**
 	 * @return
 	 */
-	public float getOpen() {
+	public double getOpen() {
 		return open;
 	}
 
 	/**
 	 * @param open
 	 */
-	public void setOpen(float open) {
+	public void setOpen(double open) {
 		this.open = open;
 	}
 
@@ -113,11 +113,11 @@ public class Stock implements ITaggedValues {
 		this.date = date;
 	}
 
-	public float getClose() {
+	public double getClose() {
 		return close;
 	}
 
-	public void setClose(float close) {
+	public void setClose(double close) {
 		this.close = close;
 		if (this.high < close) {
 			// System.out.println("Strange "+stocks.getSymbol()+"
@@ -131,7 +131,7 @@ public class Stock implements ITaggedValues {
 		}
 	}
 
-	public void setAdjClose(float adjClose) {
+	public void setAdjClose(double adjClose) {
 		this.adjClose = adjClose;
 	}
 
@@ -159,12 +159,12 @@ public class Stock implements ITaggedValues {
 	public RGB getBackgoundColor(int row) {
 		this.succ = getStock(1);
 		if (pred() != null && pred().pred() != null && pred().pred().pred() != null && pred().pred().pred().pred() != null && pred().pred().pred().pred().pred() != null && succ != null && succ.succ != null && succ.succ.succ != null) {
-			float delta = getDelta();
-			float deltaPred = pred().getDelta();
-			float deltaPredPred = pred().pred().getDelta();
-			float deltaPredPredPred = pred().pred().pred().getDelta();
-			float deltaPredPredPredPred = pred().pred().pred().pred().getDelta();
-			float deltaNext = succ.getDelta();
+			double delta = getDelta();
+			double deltaPred = pred().getDelta();
+			double deltaPredPred = pred().pred().getDelta();
+			double deltaPredPredPred = pred().pred().pred().getDelta();
+			double deltaPredPredPredPred = pred().pred().pred().pred().getDelta();
+			double deltaNext = succ.getDelta();
 			if (!true) {
 				delta = getDeltaReverse();
 				deltaPred = succ.getDeltaReverse();
@@ -190,15 +190,15 @@ public class Stock implements ITaggedValues {
 		return new RGB(255, 255, 255);
 	}
 
-	public float getDelta() {
+	public double getDelta() {
 		return this.close / pred().close - 1;
 	}
 
-	public float getDeltaReverse() {
+	public double getDeltaReverse() {
 		return this.close / succ.close - 1;
 	}
 
-	public float getDeltaNegated() {
+	public double getDeltaNegated() {
 		return this.close / succ.close - 1;
 	}
 
@@ -235,11 +235,11 @@ public class Stock implements ITaggedValues {
 		return getStock(-1);
 	}
 
-	public float getZinsen(Stock sell) {
+	public double getZinsen(Stock sell) {
 		return (sell.close / this.close - 1) / (sell.index - this.index) + 1;
 	}
 
-	public float getZinsenOpt(Stock sell) {
+	public double getZinsenOpt(Stock sell) {
 		for (Stock stock = this.succ; stock != sell; stock = stock.succ) {
 			if (getZinsen(stock) <= 1) {
 				return getZinsen(stock);
@@ -288,7 +288,7 @@ public class Stock implements ITaggedValues {
 		return volume == istock.volume && open == istock.open && close == istock.close && low == istock.low && high == istock.high && buyers == istock.buyers && sellers == istock.sellers && buyersPeople == istock.buyersPeople && sellersPeople == istock.sellersPeople;
 	}
 
-	public void addBuyer(int buyVolumne, float buyPrice, int sellVolumne, float sellPrice, int pos) {
+	public void addBuyer(int buyVolumne, double buyPrice, int sellVolumne, double sellPrice, int pos) {
 		depths[pos * 4 + 0] = buyVolumne;
 		depths[pos * 4 + 1] = buyPrice;
 		depths[pos * 4 + 2] = sellVolumne;
@@ -301,7 +301,7 @@ public class Stock implements ITaggedValues {
 		return (int) depths[pos * 4 + 0];
 	}
 
-	public float getBuyPrice(int pos) {
+	public double getBuyPrice(int pos) {
 		return depths[pos * 4 + 1];
 	}
 
@@ -309,7 +309,7 @@ public class Stock implements ITaggedValues {
 		return (int) depths[pos * 4 + 2];
 	}
 
-	public float getSellPrice(int pos) {
+	public double getSellPrice(int pos) {
 		return depths[pos * 4 + 3];
 	}
 
@@ -321,8 +321,8 @@ public class Stock implements ITaggedValues {
 		return selVolumnes;
 	}
 
-	public float getBuyPriceAtVolumne(int maxVolumne) {
-		float result = 0;
+	public double getBuyPriceAtVolumne(int maxVolumne) {
+		double result = 0;
 		int volumne = 0;
 		for (int pos = 0; pos < getDepth(); pos++) {
 			int vol = Math.min(getBuyVolumne(pos), maxVolumne);
@@ -336,8 +336,8 @@ public class Stock implements ITaggedValues {
 		return result / volumne;
 	}
 
-	public float getSellPriceAtVolumne(int maxVolumne) {
-		float result = 0;
+	public double getSellPriceAtVolumne(int maxVolumne) {
+		double result = 0;
 		int volumne = 0;
 		for (int pos = 0; pos < getDepth(); pos++) {
 			int vol = Math.min(getSellVolumne(pos), maxVolumne);
@@ -351,8 +351,8 @@ public class Stock implements ITaggedValues {
 		return result / volumne;
 	}
 
-	public float getBuyPriceForVolumne(int maxVolumne) {
-		float result = 0;
+	public double getBuyPriceForVolumne(int maxVolumne) {
+		double result = 0;
 		int volumne = 0;
 		for (int pos = 0; pos < getDepth(); pos++) {
 			int vol = Math.min(getBuyVolumne(pos), maxVolumne);
@@ -363,8 +363,8 @@ public class Stock implements ITaggedValues {
 		return result / volumne;
 	}
 
-	public float getSellPriceForVolumne(int maxVolumne) {
-		float result = 0;
+	public double getSellPriceForVolumne(int maxVolumne) {
+		double result = 0;
 		int volumne = 0;
 		for (int pos = 0; pos < getDepth(); pos++) {
 			int vol = Math.min(getSellVolumne(pos), maxVolumne);
@@ -389,6 +389,38 @@ public class Stock implements ITaggedValues {
 			volume = stock.volume;
 			date = stock.date;
 		}
+	}
+
+	public Stock log() {
+		Stock result = this.duplicate();
+		result.close = Math.log(close);
+		result.open = Math.log(open);
+		result.high = Math.log(high);
+		result.low = Math.log(low);
+		result.adjClose = Math.log(adjClose);
+		return result;
+	}
+
+	public Stock exp() {
+		Stock result = this.duplicate();
+		result.close = Math.exp(close);
+		result.open = Math.exp(open);
+		result.high = Math.exp(high);
+		result.low = Math.exp(low);
+		result.adjClose = Math.exp(adjClose);
+		return result;
+	}
+
+	private Stock duplicate() {
+		Stock result = new Stock(aStocks);
+		result.low = low;
+		result.high = high;
+		result.open = open;
+		result.adjClose = adjClose;
+		result.close = close;
+		result.date = date;
+		result.volume = volume;
+		return result;
 	}
 
 }

@@ -7,7 +7,7 @@ import com.kiegeland.boerse.domain.Stock;
 
 public class MinimizeAscendCondition extends Condition {
 
-	public float success(Stock buy, Stock base) {
+	public double success(Stock buy, Stock base) {
 		return base.close / buy.close;
 	}
 
