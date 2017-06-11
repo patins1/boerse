@@ -8,7 +8,7 @@ import java.util.List;
 
 public class Markt {
 
-	private static final String METADATA = "metadata.cvs";
+	private static final String METADATA = "metadata.csv";
 
 	String marktName;
 

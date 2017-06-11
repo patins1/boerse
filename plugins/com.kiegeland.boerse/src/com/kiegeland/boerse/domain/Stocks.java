@@ -82,9 +82,9 @@ public class Stocks {
 
 	public String getFileName() {
 		if (getSymbol().startsWith("^")) {
-			return getSymbol() + ".csf";
+			return getSymbol() + ".csv";
 		}
-		return "_" + getSymbol() + ".csf";
+		return "_" + getSymbol() + ".csv";
 	}
 
 	public String getS() {

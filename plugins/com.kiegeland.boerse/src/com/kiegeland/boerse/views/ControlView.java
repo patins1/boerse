@@ -278,7 +278,7 @@ public class ControlView extends ViewPart {
 										System.out.println("Stock loaded " + lastStock);
 										try {
 											if (lastStock != null) {
-												String text = web.getText();
+												String text = "";// web.getText();
 												text = text.replace("<title>", "<base href=\"https://www2.commsec.com.au/Private/MarketPrices/QuoteSearch/QuoteSearch.aspx\"><title>");
 												File file = new File("C:\\kurse\\snapshots\\" + lastStock + " " + Stock.dateFormat3.format(new Date()) + ".html");
 												Utilities.toFile(file, text);

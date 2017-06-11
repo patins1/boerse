@@ -13,10 +13,14 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
@@ -38,6 +42,11 @@ import com.kiegeland.boerse.Manager;
 import com.kiegeland.boerse.domain.Stock;
 import com.kiegeland.boerse.domain.Stocks;
 import com.kiegeland.boerse.util.Utilities;
+
+import lpsolve.LogListener;
+import lpsolve.LpSolve;
+import lpsolve.LpSolveException;
+import lpsolve.MsgListener;
 
 public class ChartDialog extends Dialog {
 
@@ -80,6 +89,8 @@ public class ChartDialog extends Dialog {
 	private Button normalizedButton;
 
 	private Button relativeButton;
+
+	private Button lpSolveButton;
 
 	public ChartDialog() {
 		super(PlatformUI.getWorkbench().getDisplay().getActiveShell());
@@ -230,6 +241,7 @@ public class ChartDialog extends Dialog {
 					boersenChart.showRSI = rsiButton.getSelection();
 					boersenChart.showFastSTO = fastSTOButton.getSelection();
 					boersenChart.showNormalized = normalizedButton.getSelection();
+					boersenChart.showLpSolved = lpSolveButton.getSelection();
 					canvas.setChart(boersenChart.createCFStockChart());
 				}
 
@@ -409,6 +421,7 @@ public class ChartDialog extends Dialog {
 		fastSTOButton = createCheck(parent, 35, "Fast STO", false);
 		normalizedButton = createCheck(parent, 36, "Norm. Vol.", false);
 		relativeButton = createCheck(parent, 37, "Relative", false);
+		lpSolveButton = createCheck(parent, 38, "LpSolve", false);
 		createButton(parent, 26, "Update", false);
 		createButton(parent, 24, "Yahoo", false);
 		enabledButtons();
@@ -445,6 +458,11 @@ public class ChartDialog extends Dialog {
 		} else if (buttonId == 25) {
 			offset = 0;
 			range = 32;
+		} else if (buttonId == 38) {
+			if (lpSolveButton.getSelection()) {
+				List<Stock> sts = calcCutout(stocks.asList());
+				lpSolve(getOldestStock(sts).date, getLatestStock(sts).date, stocks);
+			}
 		} else if (buttonId == 24) {
 			try {
 				String symb = URLEncoder.encode(stocks.getS());
@@ -523,6 +541,215 @@ public class ChartDialog extends Dialog {
 			current.setChart(stocks, stock);
 			current.repaint();
 		}
+	}
+
+	private static final int FIRST_COL = 1;
+
+	private void lpSolve(Date oldest, Date latest, Stocks only) {
+
+		boolean solveAll = false;
+
+		try {
+			// {
+			//
+			// // Create a problem with 4 variables and 0 constraints
+			// LpSolve solver = LpSolve.makeLp(0, 4);
+			//
+			// // add constraints
+			// solver.strAddConstraint("3 2 2 1", LpSolve.LE, 4);
+			// solver.strAddConstraint("0 4 3 1", LpSolve.GE, 3);
+			// List<Stocks> stocks = Manager.maerkte.get(0).getStocks();
+			// }
+
+			List<Stocks> stocks = Manager.maerkte.get(0).getStocks();
+
+			// Create a problem with 4 variables and 0 constraints
+			LpSolve solver = LpSolve.makeLp(0, stocks.size() * (solveAll ? stocks.size() : 1));
+
+			LogListener logfunc = new LogListener() {
+
+				@Override
+				public void logfunc(LpSolve arg0, Object arg1, String arg2) throws LpSolveException {
+					System.out.print("LogListener:" + arg2);
+				}
+			};
+			solver.putLogfunc(logfunc, new Integer(234));
+
+			MsgListener msgfunc = new MsgListener() {
+
+				@Override
+				public void msgfunc(LpSolve problem, Object userhandle, int msg) throws LpSolveException {
+					System.out.print("MsgListener:" + msg);
+				}
+
+			};
+			solver.putMsgfunc(msgfunc, new Integer(345), 1 | 8 | 16 | 32 | 128 | 512);
+
+			{
+				int col = FIRST_COL;
+				for (Stocks stock : stocks) {
+					if (only != null && stock != only) {
+						continue;
+					}
+					for (Stocks relstock : stocks) {
+						solver.setColName(col, stock.getSymbol() + "_" + relstock.getSymbol());
+						col++;
+					}
+				}
+			}
+
+			{
+				// set objective function
+				List<Double> coefficents = new ArrayList<Double>();
+				for (Stocks stock : stocks) {
+					if (only != null && stock != only) {
+						continue;
+					}
+					for (Stocks relstock : stocks) {
+						if (stock == relstock) {
+							coefficents.add(0.0);
+						} else {
+							coefficents.add(1.0);
+						}
+					}
+				}
+				solver.setMaxim();
+				solver.strSetObjFn(StringUtils.join(coefficents, " "));
+
+				// addConstraint(solver, coefficents, LpSolve.GE, 0.0);
+			}
+
+			// calculate closes
+			final Set<Date> allDates = new HashSet<Date>();
+			for (Stocks stc : stocks) {
+				List<Date> dates = stc.asList().stream().map(x -> x.date).filter(date -> date.getDay() == 5).collect(Collectors.toList());
+				if (allDates.isEmpty()) {
+					allDates.addAll(dates);
+				} else {
+					allDates.retainAll(dates);
+					if (allDates.isEmpty()) {
+						throw new RuntimeException("No dates!");
+					}
+				}
+			}
+			Map<Stocks, List<Double>> closesMap = new HashMap<Stocks, List<Double>>();
+			for (Stocks stc : stocks) {
+				List<Double> closes = stc.asList().stream().filter(x -> x.within(oldest, latest) && allDates.contains(x.date)).map(x -> x.close).collect(Collectors.toList());
+				List<Double> closesAll = stc.asList().stream().filter(x -> x.within(null, latest) && allDates.contains(x.date)).map(x -> x.close).collect(Collectors.toList());
+				closesAll = BoersenChart.ema(closesAll, 3);
+				closes = closesAll.subList(closesAll.size() - closes.size(), closesAll.size());
+				closesMap.put(stc, closes);
+			}
+
+			// add constraints
+			for (Stocks stock : stocks) {
+				if (only != null && stock != only) {
+					continue;
+				}
+
+				int index = 0;
+				Stock prevStock = null;
+				for (Stock st : stock.getStocks()) {
+					if (!allDates.contains(st.date) || !st.within(oldest, latest)) {
+						continue;
+					}
+					if (index == 0) {
+						prevStock = st;
+						index++;
+						continue;
+					}
+
+					List<Double> coefficents = new ArrayList<Double>();
+					for (Stocks relstock : stocks) {
+						if (stock == relstock) {
+							coefficents.add(0.0);
+						} else {
+							List<Double> closes = closesMap.get(relstock);
+							double reldelta = Math.log(closes.get(index))/* - Math.log(closes.get(index - 1)) */;
+							coefficents.add(reldelta/* * stock.volume * (st.close - prevStock.close) */);
+						}
+					}
+					List<Double> closes = closesMap.get(stock);
+					double rh = Math.log(closes.get(index)) /*- Math.log(closes.get(index - 1))*/;
+					{
+						addConstraint(solver, coefficents, rh > 0 ? LpSolve.LE : LpSolve.GE, rh);
+					}
+
+					prevStock = st;
+					index++;
+				}
+
+				ArrayList<Double> coefficents = new ArrayList<Double>();
+				append(coefficents, 1.0, stocks.size());
+				addConstraint(solver, coefficents, LpSolve.EQ, 1.0);
+
+			}
+
+			for (int row = 0; row < solver.getNrows(); row++) {
+				printLastRow(solver, row + 1);
+			}
+
+			// solve the problem
+			solver.solve();
+
+			// print solution
+			System.out.println("Value of objective function: " + solver.getObjective());
+			double[] var = solver.getPtrVariables();
+			for (int i = 0; i < var.length; i++) {
+				System.out.println("Value of var[" + solver.getColName(i + FIRST_COL) + "] = " + var[i]);
+			}
+
+			// delete the problem and free memory
+			solver.deleteLp();
+		} catch (LpSolveException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	private void addConstraint(LpSolve solver, List<Double> coefficents, int i, double rh) throws LpSolveException {
+		solver.strAddConstraint(StringUtils.join(coefficents, " "), i, rh);
+		// solver.addConstraint(coefficents.stream().mapToDouble(Double::doubleValue).toArray(), i, rh);
+	}
+
+	private void printLastRow(LpSolve solver, int row) throws LpSolveException {
+		// double[] coefficents2 = solver.getPtrRow(row);
+
+		String result = "0";
+		int colnr = 0;
+		for (int col = 0; col < solver.getNcolumns(); col++) {
+			double coeff = solver.getMat(row, col + FIRST_COL);
+			String varName = solver.getColName(colnr + FIRST_COL);
+			result += "+" + coeff + "*" + varName;
+			colnr++;
+		}
+		if (result.startsWith("0+")) {
+			result = result.substring("0+".length());
+		}
+
+		short type = solver.getConstrType(row);
+		System.out.println(solver.getRowName(row) + ": " + result + (type == LpSolve.LE ? "<=" : type == LpSolve.GE ? ">=" : type == LpSolve.EQ ? "=" : "??") + solver.getRh(row));
+	}
+
+	private void append(List<Double> coefficents, double d, int size) {
+		while (size > 0) {
+			coefficents.add(d);
+			size--;
+		}
+	}
+
+	private String getTextualCoefficients(double[] coefficents, LpSolve solver) throws LpSolveException {
+		String result = "0";
+		int colnr = FIRST_COL;
+		for (double coeff : coefficents) {
+			String varName = solver.getColName(colnr);
+			result += "+" + coeff + "*" + varName;
+			colnr++;
+		}
+		if (result.startsWith("0+")) {
+			result = result.substring("0+".length());
+		}
+		return result;
 	}
 
 }

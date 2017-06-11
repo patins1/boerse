@@ -33,6 +33,8 @@ import com.kiegeland.boerse.views.AllStockGainsView;
 
 public class Manager {
 
+	private static final int FIRST_COL = 1;
+
 	public static Date buyDate = null;
 
 	public static int BaseDays = 7;
@@ -81,6 +83,10 @@ public class Manager {
 		}
 
 		buyDate = findEqualOr(new Date(), false);
+
+		System.loadLibrary("lpsolve55"); //$NON-NLS-1$
+		System.loadLibrary("lpsolve55j"); //$NON-NLS-1$
+
 	}
 
 	public static List<Gain> calcGains(Stocks aStock) {
@@ -270,14 +276,17 @@ public class Manager {
 			BufferedReader br = new BufferedReader(new InputStreamReader(content));
 			String stockData;
 
+			br.readLine();
+			br.readLine();
 			while ((stockData = br.readLine()) != null) {
 				StringTokenizer stockTok = new StringTokenizer(stockData, ",\"");
 				try {
-					String name = stockTok.nextToken();
 					String symbol = stockTok.nextToken();
+					String name = stockTok.nextToken();
 					String group = stockTok.nextToken();
-					if (symbol.equals("ASX code"))
-						continue;
+					// if (symbol.equals("ASX code"))
+					// continue;
+					//
 					if (group.equals("Class Pend"))
 						continue;
 					if (group.equals("Not Applic"))
@@ -319,24 +328,24 @@ public class Manager {
 		// }
 		// }
 
-		result.add(new Stocks("^AXGD", "S&P/ASX All Ordinaries Gold Index"));
-		result.add(new Stocks("^AXPJ", "S&P/ASX 200 A-REIT Index"));
-		result.add(new Stocks("^AXDJ", "S&P/ASX 200 Consumer Discretionary Index"));
-		result.add(new Stocks("^AXSJ", "S&P/ASX 200 Consumer Staples Index"));
-		result.add(new Stocks("^AXEJ", "S&P/ASX 200 Energy Index"));
-		result.add(new Stocks("^AXFJ", "S&P/ASX 200 Financial Index"));
-		result.add(new Stocks("^AXXJ", "S&P/ASX 200 Financials excluding A-REITs Index"));
-		result.add(new Stocks("^AXHJ", "S&P/ASX 200 Health Care Index"));
-		result.add(new Stocks("^AXNJ", "S&P/ASX 200 Industrials Index"));
-		result.add(new Stocks("^AXIJ", "S&P/ASX 200 Information Technology Index"));
-		result.add(new Stocks("^AXMJ", "S&P/ASX 200 Materials Index"));
-		result.add(new Stocks("^AXMM", "S&P/ASX 300 Metals and Mining Index"));
-		result.add(new Stocks("^AXJR", "S&P/ASX 200 Resources"));
-		result.add(new Stocks("^AXTJ", "S&P/ASX 200 Telecommunications Services Index"));
-		result.add(new Stocks("^AXUJ", "S&P/ASX 200 Utilities Index"));
-		result.add(new Stocks("^AXBAJ", "S&P/ASX 200 Bank Index"));
+		// result.add(new Stocks("^AXGD", "S&P/ASX All Ordinaries Gold Index"));
+		// result.add(new Stocks("^AXPJ", "S&P/ASX 200 A-REIT Index"));
+		// result.add(new Stocks("^AXDJ", "S&P/ASX 200 Consumer Discretionary Index"));
+		// result.add(new Stocks("^AXSJ", "S&P/ASX 200 Consumer Staples Index"));
+		// result.add(new Stocks("^AXEJ", "S&P/ASX 200 Energy Index"));
+		// result.add(new Stocks("^AXFJ", "S&P/ASX 200 Financial Index"));
+		// result.add(new Stocks("^AXXJ", "S&P/ASX 200 Financials excluding A-REITs Index"));
+		// result.add(new Stocks("^AXHJ", "S&P/ASX 200 Health Care Index"));
+		// result.add(new Stocks("^AXNJ", "S&P/ASX 200 Industrials Index"));
+		// result.add(new Stocks("^AXIJ", "S&P/ASX 200 Information Technology Index"));
+		// result.add(new Stocks("^AXMJ", "S&P/ASX 200 Materials Index"));
+		// result.add(new Stocks("^AXMM", "S&P/ASX 300 Metals and Mining Index"));
+		// result.add(new Stocks("^AXJR", "S&P/ASX 200 Resources"));
+		// result.add(new Stocks("^AXTJ", "S&P/ASX 200 Telecommunications Services Index"));
+		// result.add(new Stocks("^AXUJ", "S&P/ASX 200 Utilities Index"));
+		// result.add(new Stocks("^AXBAJ", "S&P/ASX 200 Bank Index"));
 
-		result.add(new Stocks("^ATLI", "ASX20"));
+		// result.add(new Stocks("^ATLI", "ASX20"));
 		return result;
 	}
 
@@ -352,7 +361,7 @@ public class Manager {
 					// continue;
 					contentMetadata = new FileInputStream(metadataFile);
 				} else {
-					String kurseString = Utilities.downloadURL("http://www.asx.com.au/asx/research/ASXListedCompanies.csv");
+					String kurseString = Utilities.downloadURL("https://www.asx20list.com/wp-content/uploads/csv/20170101-asx20.csv");
 					Utilities.toFile(metadataFile, kurseString);
 					contentMetadata = new StringBufferInputStream(kurseString);
 				}

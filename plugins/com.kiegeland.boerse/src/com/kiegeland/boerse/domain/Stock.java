@@ -423,4 +423,8 @@ public class Stock implements ITaggedValues {
 		return result;
 	}
 
+	public boolean within(Date from, Date to) {
+		return (from == null || !date.before(from)) && !date.after(to);
+	}
+
 }

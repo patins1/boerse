@@ -81,6 +81,7 @@ public class BoersenChart {
 	double totalProfit = 0;
 	private List<Stock> aStocksMinMax;
 	private Stocks original;
+	public boolean showLpSolved;
 
 	public BoersenChart(List<Stock> aStocks, Stock baseStock, List<Stock> allstocks, List<Stock> aStocksMinMax, Stocks original) {
 		this.aStocks = aStocks;
@@ -827,11 +828,11 @@ public class BoersenChart {
 		return boughtAt;
 	}
 
-	private List<Double> ema(List<Double> closes, int timePeriod) {
+	public static List<Double> ema(List<Double> closes, int timePeriod) {
 		return ema(closes, timePeriod, 1.0);
 	}
 
-	private List<Double> ema(List<Double> closes, int timePeriod, double f) {
+	private static List<Double> ema(List<Double> closes, int timePeriod, double f) {
 		double multiplier = (2.0 / (timePeriod + 1));
 		List<Double> results = new ArrayList<Double>();
 		double result = closes.get(0);
